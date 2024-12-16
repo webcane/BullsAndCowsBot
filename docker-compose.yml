@@ -1,0 +1,39 @@
+services:
+  builder:
+    image: gradle:8.11.1-jdk17-jammy
+    container_name: bullsandcows_builder
+    working_dir: /app
+    volumes:
+      - .:/app   # Mount the current directory to `/app` in the container
+      - gradle-cache:/root/.gradle # Reuse Gradle cache for faster builds
+    command: gradle bootJar --stacktrace
+    networks:
+      - bullsandcows-network
+
+  app:
+    image: openjdk:17-jdk-slim # Use a lightweight OpenJDK image for running the app
+    container_name: bullsandcows_app
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+    working_dir: /app
+    volumes:
+      - .:/app   # Mount the current directory to `/app` in the container
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+      - "443:443"
+      - "3128:3128"
+      - "8080:8080"
+      - "42567:42567"
+    command: java -Dhttp.proxyHost=$TGBOT_PROXY_HOSTNAME -Dhttp.proxyPort=$TGBOT_PROXY_PORT -Dhttps.proxyUser=$TGBOT_PROXY_USERNAME -Dhttps.proxyPassword=$TGBOT_PROXY_PASSWORD -jar build/libs/app.jar
+    restart: always
+    networks:
+      - bullsandcows-network
+
+volumes:
+  gradle-cache:
+
+networks:
+  bullsandcows-network:
