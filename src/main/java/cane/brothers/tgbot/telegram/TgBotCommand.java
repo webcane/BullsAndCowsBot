@@ -12,7 +12,7 @@ public enum TgBotCommand implements ICommandMessage {
         @Override
         public SendMessage.SendMessageBuilder getReply(Supplier<AbstractGuessNumber> commandSupplier) {
             var secret = commandSupplier.get();
-            var messageText = String.format("Enter a %d digit number%n", secret.getLength());
+            var messageText = String.format("Enter a %d digit number", secret.getLength());
             return SendMessage.builder().text(messageText);
         }
     },

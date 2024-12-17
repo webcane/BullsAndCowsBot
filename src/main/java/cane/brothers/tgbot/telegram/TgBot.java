@@ -1,5 +1,8 @@
 package cane.brothers.tgbot.telegram;
 
+import cane.brothers.GameNumber;
+import cane.brothers.GuessNumber;
+import cane.brothers.GuessResult;
 import cane.brothers.tgbot.AppProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiredArgsConstructor
 public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdateConsumer {
 
+    private static final int secretLength = 4;
     private final TelegramClient telegramClient;
     private final AppProperties properties;
     private final TgBotGame chatGame;
@@ -46,7 +50,6 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
         if (update.hasMessage()) {
             Long chatId = update.getMessage().getChatId();
             var userMessage = update.getMessage().getText();
-            Integer messageId = update.getMessage().getMessageId();
 
             // command
             if (update.getMessage().isCommand()) {
@@ -56,21 +59,15 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
 
             // guess
             else if (update.getMessage().hasText()) {
-//                sendReplyMessage(update, "already working on it");
-//                String answer = getGptAnswer(userMessage);
-//
-//                // TODO send message builder customizers
-//                var msgBuilder = SendMessage.builder()
-//                        .chatId(chatId);
-//                if (settings.getUseMarkup(chatId)) {
-//                    msgBuilder.parseMode("MarkdownV2")
-//                            .text(StringEscapeUtils.builder(ESCAPE).escape(answer).toString());
-//                } else {
-//                    msgBuilder.text(Optional.ofNullable(answer).orElse("no answer"));
-//                }
-//                SendMessage reply = msgBuilder.build();
-//                logMessage(update, reply.getText());
-//                sendMessage(reply, () -> messageId);
+                GuessNumber guess = new GuessNumber(userMessage, secretLength);
+                String guessMessage = "Try again";
+                if (guess.isValid()) {
+                    GameNumber secret = chatGame.getSecret(chatId);
+                    GuessResult result = secret.match(guess);
+                    guessMessage = result.toString();
+                }
+                SendMessage guessReply = SendMessage.builder().text(guessMessage).chatId(chatId).build();
+                sendMessage(guessReply);
             }
         }
     }

@@ -10,10 +10,10 @@ public class TgBotGame {
     private final Map<Long, GameNumber> chatGame = new HashMap<>();
 
     public GameNumber newGame(Long chatId) {
-        return chatGame.put(chatId, new GameNumber());
+        return chatGame.computeIfAbsent(chatId, k -> new GameNumber());
     }
 
-    public GameNumber getGame(Long chatId) {
+    public GameNumber getSecret(Long chatId) {
         return chatGame.get(chatId);
     }
 }
