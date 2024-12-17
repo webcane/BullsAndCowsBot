@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(TgBotProperties.class)
+@EnableConfigurationProperties(AppProperties.class)
 public class App {
 
     public static void main(String[] args) {

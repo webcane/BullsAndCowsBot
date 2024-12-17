@@ -20,6 +20,7 @@ description = 'Bulls&Cows game telegram bot'
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -27,6 +28,18 @@ dependencies {
     implementation libs.guava
     // spring boot
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // telegram
+    implementation 'org.telegram:telegrambots-springboot-longpolling-starter:8.0.0'
+    implementation 'org.telegram:telegrambots-client:8.0.0'
+    // slf4j implementation
+    implementation 'ch.qos.logback:logback-classic:1.4.12'
+    // bulls@cows
+//    implementation 'cane.brothers:mastermind:1.1'
+    implementation 'com.github.webcane:mastermind:v.1.1'
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 
 testing {
