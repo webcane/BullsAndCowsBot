@@ -1,8 +1,5 @@
 package cane.brothers.tgbot.telegram;
 
-import cane.brothers.GameNumber;
-import cane.brothers.GuessNumber;
-import cane.brothers.GuessResult;
 import cane.brothers.tgbot.AppProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiredArgsConstructor
 public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdateConsumer {
 
-    private static final int secretLength = 4;
     private final TelegramClient telegramClient;
     private final AppProperties properties;
     private final TgBotGame chatGame;
@@ -59,18 +55,12 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
 
             // guess
             else if (update.getMessage().hasText()) {
-                GuessNumber guess = new GuessNumber(userMessage, secretLength);
-                String guessMessage = "Try again";
-                if (guess.isValid()) {
-                    GameNumber secret = chatGame.getSecret(chatId);
-                    GuessResult result = secret.match(guess);
-                    guessMessage = result.toString();
-                }
-                SendMessage guessReply = SendMessage.builder().text(guessMessage).chatId(chatId).build();
-                sendMessage(guessReply);
+                SendMessage commandReply = chatGame.getGuessMessage(chatId, userMessage);
+                sendMessage(commandReply);
             }
         }
     }
+
 
     protected SendMessage getCommandReply(Long chatId, String userMessage) {
         AtomicReference<SendMessage> reply = new AtomicReference<>();

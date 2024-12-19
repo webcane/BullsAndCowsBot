@@ -23,11 +23,6 @@ public class TgBotConfig {
         return new TelegramBotsLongPollingApplication(() -> objectMapper, () -> okClient);
     }
 
-//    @Bean
-//    public TgBotSettings telegramBotSettings() {
-//        return new TgBotSettings();
-//    }
-
     @Bean
     public TgBotGame tgBotGame() {
         return new TgBotGame();
