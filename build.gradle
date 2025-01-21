@@ -7,9 +7,10 @@
  */
 
 plugins {
+    id 'java'
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'application'
-    id 'org.springframework.boot' version '3.2.3'
+    id 'org.springframework.boot' version '3.4.0'
     id 'io.spring.dependency-management' version '1.1.4'
 }
 
@@ -20,7 +21,14 @@ description = 'Bulls&Cows game telegram bot'
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
-    maven { url 'https://jitpack.io' }
+    maven {
+        name = "GitHubPackages"
+        url = uri("https://maven.pkg.github.com/webcane/mastermind")
+        credentials {
+            username = "webcane"
+            password = getEnvVar('GITHUB_TOKEN')
+        }
+    }
 }
 
 dependencies {
@@ -29,14 +37,18 @@ dependencies {
     // spring boot
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    // postgresql
+    runtimeOnly 'org.postgresql:postgresql'
     // telegram
     implementation 'org.telegram:telegrambots-springboot-longpolling-starter:8.0.0'
     implementation 'org.telegram:telegrambots-client:8.0.0'
     // slf4j implementation
     implementation 'ch.qos.logback:logback-classic:1.4.12'
     // bulls@cows
-//    implementation 'cane.brothers:mastermind:1.1'
-    implementation 'com.github.webcane:mastermind:v.1.1'
+    implementation 'cane.brothers:mastermind:3.4'
+    // either
+    implementation 'io.github.jbock-java:either:1.5.2'
     // Lombok
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
@@ -75,6 +87,17 @@ configurations {
     }
 }
 
+compileJava {
+    options.compilerArgs << '-parameters'
+}
+
 bootJar {
     archiveFileName = "app.${archiveExtension.get()}"
+}
+
+static String getEnvVar(String env_var) {
+    return new File('.env').readLines()
+            .findAll { it?.trim() && !it.trim().startsWith('#') }
+            .collect { it.split('=') }
+            .find { it[0] == env_var }[1]
 }

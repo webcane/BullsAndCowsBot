@@ -10,7 +10,8 @@ import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 @Configuration
-public class TgBotConfig {
+class TgBotConfig {
+
 
     @Bean
     public TelegramClient telegramClient(OkHttpClient okClient, AppProperties properties) {
@@ -21,10 +22,5 @@ public class TgBotConfig {
     public TelegramBotsLongPollingApplication telegramBotApplication(ObjectMapper objectMapper,
                                                                      OkHttpClient okClient) {
         return new TelegramBotsLongPollingApplication(() -> objectMapper, () -> okClient);
-    }
-
-    @Bean
-    public TgBotGame tgBotGame() {
-        return new TgBotGame();
     }
 }

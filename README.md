@@ -9,6 +9,11 @@ TGBOT_PROXY_HOSTNAME=
 TGBOT_PROXY_PORT=
 TGBOT_PROXY_USERNAME=
 TGBOT_PROXY_PASSWORD=
+DB_NAME=
+DB_HOST=
+SPRING_DATASOURCE_PASSWORD=
+SPRING_DATASOURCE_USERNAME=
+GITHUB_TOKEN=
 ```
 
 ## telegram commands
@@ -26,4 +31,8 @@ there are following steps:
 ```bash
 docker compose up --detach
 ```
+
+## links
+* [Emoji Unicode Tables](https://apps.timwhitlock.info/emoji/tables/unicode)
+* 
 

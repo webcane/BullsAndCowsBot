@@ -3,6 +3,7 @@ package cane.brothers.tgbot.emoji;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 
+// https://apps.timwhitlock.info/emoji/tables/unicode
 public enum GameEmoji {
     // digits
     DIGIT_ZERO("30E283A3"),
@@ -18,7 +19,35 @@ public enum GameEmoji {
     // ox
     BULL("F09F9082"),
     // cow
-    COW("F09F9084");
+    COW("F09F9084"),
+    // warning sign
+    WARN("E29AA0"),
+    // victory hand
+    VICTORY_HAND("E29C8C"),
+    // glowing star
+    STAR("F09F8C9F"),
+    // wrapped present
+    PRESENT("F09F8E81"),
+    // party popper
+    POPPER("F09F8E89"),
+    // direct hit
+    HIT("F09F8EAF"),
+    // trophy
+    TROPHY("F09F8F86"),
+    // clapping hands sign
+    CLAPPING_HANDS("F09F918F"),
+    // crown
+    CROWN("F09F9191"),
+    // flexed biceps
+    BICEPS("F09F92AA"),
+    // hundred points symbol
+    HUNDRED("F09F92AF"),
+    // money bag
+    MONEY_BAG("F09F92B0"),
+    // money with wings
+    MONEY_WINGS("F09F92B8"),
+    // fire
+    FIRE("F09F94A5");
 
     final byte[] bytes;
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <logger name="cane.brothers.tgbot" level="debug" />
+    <logger name="cane.brothers.tgbot" level="debug"/>
 
     <!-- Define log levels for the root logger -->
     <root level="info">
