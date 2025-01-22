@@ -49,9 +49,13 @@ class GuessGame {
         return turns.last();
     }
 
-    public boolean addTurn(GuessTurn newTurn) {
+    public void addTurn(GuessTurn newTurn) {
         var ordinal = getTurns().size();
         newTurn.setOrdinal(++ordinal);
-        return getTurns().add(newTurn);
+        getTurns().add(newTurn);
+    }
+
+    public boolean isWin() {
+        return !turns.isEmpty() && getCurrentTurn().isWin();
     }
 }

@@ -8,6 +8,8 @@ public interface ChatGameService {
 
     boolean isGameStarted(Long chatId);
 
+    boolean isGameFinished(Long chatId);
+
     Either<IChatGame, ChatGameException> getChatGame(Long chatId);
 
     Either<IChatGame, ChatGameException> newGame(Long chatId, int complexity);
@@ -18,4 +20,6 @@ public interface ChatGameService {
 
     boolean isReplaceMessage(Long chatId);
     void updateReplaceMessage(Long chatId);
+
+    boolean isDebug(Long chatId);
 }

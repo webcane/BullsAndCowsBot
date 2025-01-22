@@ -19,13 +19,14 @@ class ChatGame {
     private Integer lastMessageId;
     private SortedSet<GuessGame> allGames = new TreeSet<>(Comparator.comparingInt(GuessGame::getOrdinal));
     private boolean replaceMessage = false;
+    private boolean debug = false;
 
     ChatGame(Long chatId) {
         this.chatId = chatId;
     }
 
     @PersistenceCreator
-    private ChatGame(UUID id, Long chatId, Integer lastMessageId, Collection<GuessGame> allGames, boolean replaceMessage, int version) {
+    private ChatGame(UUID id, Long chatId, Integer lastMessageId, Collection<GuessGame> allGames, boolean replaceMessage, boolean debug, int version) {
         this.id = id;
         this.chatId = chatId;
         this.lastMessageId = lastMessageId;
@@ -38,14 +39,14 @@ class ChatGame {
         return allGames.last();
     }
 
-    public boolean addNewGame(GuessGame newGame) {
+    public void addNewGame(GuessGame newGame) {
         var ordinal = getAllGames().size();
         newGame.setOrdinal(++ordinal);
-        return getAllGames().add(newGame);
+        getAllGames().add(newGame);
     }
 
-    public boolean addTurn(GuessTurn newTurn) {
-        return getCurrentGame().addTurn(newTurn);
+    public void addTurn(GuessTurn newTurn) {
+        getCurrentGame().addTurn(newTurn);
     }
 
 

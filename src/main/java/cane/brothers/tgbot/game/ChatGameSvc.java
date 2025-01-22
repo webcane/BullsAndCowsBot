@@ -35,7 +35,7 @@ class ChatGameSvc implements ChatGameService {
             return chatGame.orElse(chatRepo.save(new ChatGame(chatId)));
         }
         return chatGame.orElseThrow(
-                () -> new ChatGameException(chatId, "There is no active game. Please, use the `/new` command"));
+                () -> new ChatGameException(chatId, "There is no active game"));
     }
 
     @Override
@@ -65,6 +65,17 @@ class ChatGameSvc implements ChatGameService {
     public boolean isGameStarted(Long chatId) {
         try {
             return getChatGame(chatId, false).getCurrentGame() != null;
+        } catch (ChatGameException e) {
+            log.error(e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isGameFinished(Long chatId) {
+        try {
+            var guessGame = getChatGame(chatId, false).getCurrentGame();
+            return guessGame.isWin();
         } catch (ChatGameException e) {
             log.error(e.getMessage());
             return false;
@@ -117,7 +128,7 @@ class ChatGameSvc implements ChatGameService {
 
             @Override
             public boolean isWin() {
-                return getBulls() == getComplexity();
+                return source.isWin();
             }
 
             @Override
@@ -180,6 +191,16 @@ class ChatGameSvc implements ChatGameService {
             chatRepo.updateReplaceMessage(chatGame);
         } catch (Exception ex) {
             log.error(ex.getMessage());
+        }
+    }
+
+    @Override
+    public boolean isDebug(Long chatId) {
+        try {
+            return getChatGame(chatId, false).isDebug();
+        } catch (ChatGameException e) {
+            log.error(e.getMessage());
+            return false;
         }
     }
 }

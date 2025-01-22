@@ -19,4 +19,8 @@ class GuessTurn {
         this.bulls = bulls;
         this.cows = cows;
     }
+
+    public boolean isWin() {
+        return bulls == guess.getComplexity();
+    }
 }

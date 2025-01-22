@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS chat_game (
     chat_id BIGINT NOT NULL UNIQUE,
     last_message_id INTEGER,
     replace_message boolean,
+    debug boolean DEFAULT FALSE,
     version INT NOT NULL
 );
 

@@ -31,9 +31,6 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
     private final AppProperties properties;
     private final ChatGameService botGame;
 
-
-    private boolean debug = true;
-
     @Override
     public String getBotToken() {
         return properties.token();
@@ -77,16 +74,16 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
                 // guess
                 else if (update.getMessage().hasText()) {
 
-                    if (botGame.isGameStarted(chatId)) {
+                    if (botGame.isGameStarted(chatId) && !botGame.isGameFinished(chatId)) {
                         updateGameMessage(chatId);
 
                         var turnReplyBuilder = TurnCommand.SHOW_RESULT.getReply(() -> botGame.makeTurn(chatId, userMessage));
                         var lastMethod = sendMessage(turnReplyBuilder.chatId(chatId).build());
 
                         saveGameMessage(chatId, lastMethod);
-                    }
-                    else {
-                        var commandReply = SendMessage.builder().text("Please, start new game first!").chatId(chatId).build();
+                    } else {
+                        var commandReply = SendMessage.builder().text("Please, start another game using /new command")
+                                .chatId(chatId).build();
                         sendMessage(commandReply);
                     }
                 }
@@ -104,7 +101,7 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
             } catch (Exception ex) {
                 log.error("Exception occurred", ex);
 
-                if (debug) {
+                if (botGame.isDebug(chatId)) {
                     var errorMessage = String.format("%s %s", GameEmoji.WARN, ex.getMessage());
                     var errorReply = SendMessage.builder().text(errorMessage).chatId(chatId).build();
 
@@ -127,11 +124,8 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
     }
 
     private void saveGameMessage(Long chatId, Serializable lastMethod) {
-        if (botGame.isReplaceMessage(chatId)) {
-
-            if (lastMethod instanceof Message msg) {
-                botGame.setLastMessageId(chatId, msg.getMessageId());
-            }
+        if (lastMethod instanceof Message msg) {
+            botGame.setLastMessageId(chatId, msg.getMessageId());
         }
     }
 
