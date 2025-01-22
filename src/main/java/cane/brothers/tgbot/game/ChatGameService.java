@@ -1,6 +1,5 @@
 package cane.brothers.tgbot.game;
 
-import cane.brothers.game.IGuessTurn;
 import io.jbock.util.Either;
 
 public interface ChatGameService {
@@ -14,11 +13,12 @@ public interface ChatGameService {
 
     Either<IChatGame, ChatGameException> newGame(Long chatId, int complexity);
 
-    Either<IGuessTurn, ChatGameException> makeTurn(Long chatId, String guessMsg);
+    Either<IChatGame, ChatGameException> makeTurn(Long chatId, String guessMsg);
 
     void setLastMessageId(Long chatId, Integer messageId);
 
     boolean isReplaceMessage(Long chatId);
+
     void updateReplaceMessage(Long chatId);
 
     boolean isDebug(Long chatId);

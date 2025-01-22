@@ -54,7 +54,7 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
             var userMessage = update.getMessage().getText();
 
             try {
-                // command
+                // registered command
                 if (update.getMessage().isCommand()) {
                     GameCommand command = GameCommand.fromString(userMessage);
 
@@ -71,16 +71,25 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
                     }
                 }
 
-                // guess
+                // guess message
                 else if (update.getMessage().hasText()) {
 
                     if (botGame.isGameStarted(chatId) && !botGame.isGameFinished(chatId)) {
                         updateGameMessage(chatId);
 
-                        var turnReplyBuilder = TurnCommand.SHOW_RESULT.getReply(() -> botGame.makeTurn(chatId, userMessage));
-                        var lastMethod = sendMessage(turnReplyBuilder.chatId(chatId).build());
+                        var commandReply = GameCommand.SHOW_ALL_TURNS_RESULT.getReply(() -> botGame.makeTurn(chatId, userMessage));
+                        var lastMethod = sendMessage(commandReply.build());
 
                         saveGameMessage(chatId, lastMethod);
+
+                        // show win
+                        if(botGame.isGameFinished(chatId)) {
+                            commandReply = GameCommand.SHOW_WIN_RESULT.getReply(() -> botGame.getChatGame(chatId));
+                            sendMessage(commandReply.build());
+
+                            commandReply = GameCommand.SHOW_WIN_MESSAGE.getReply(() -> botGame.getChatGame(chatId));
+                            sendMessage(commandReply.build());
+                        }
                     } else {
                         var commandReply = SendMessage.builder().text("Please, start another game using /new command")
                                 .chatId(chatId).build();

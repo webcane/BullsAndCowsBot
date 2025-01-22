@@ -1,5 +1,7 @@
 package cane.brothers.tgbot.telegram;
 
+import cane.brothers.game.IGuessTurn;
+import cane.brothers.tgbot.emoji.GameEmoji;
 import cane.brothers.tgbot.game.ChatGameException;
 import cane.brothers.tgbot.game.IChatGame;
 import io.jbock.util.Either;
@@ -48,6 +50,113 @@ enum GameCommand implements IGameCommand {
                     r -> reply.set(SendMessage.builder().chatId(r.getChatId())
                             .text(r.getMessage())));
             return reply.get();
+        }
+    },
+    SHOW_LAST_TURN_RESULT {
+        @Override
+        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+            AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
+            commandSupplier.get().ifLeftOrElse(
+                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
+                    r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
+            return reply.get();
+        }
+
+        public String displayEmojiResult(IChatGame chatGame) {
+            var gameTurn = chatGame.getCurrentGame().getTurns().getLast();
+            return getTurnLine(gameTurn) + "\n"
+                    + (gameTurn.isWin() ? GameEmoji.HIT : "");
+        }
+
+        private String getTurnLine(IGuessTurn gameTurn) {
+            return "" + GameEmoji.getDigit(gameTurn.getBulls()) + GameEmoji.BULL +
+                    GameEmoji.getDigit(gameTurn.getCows()) + GameEmoji.COW;
+        }
+    },
+    SHOW_ALL_TURNS_RESULT {
+        @Override
+        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+            AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
+            commandSupplier.get().ifLeftOrElse(
+                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
+                    r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
+            return reply.get();
+        }
+
+        public String displayEmojiResult(IChatGame chatGame) {
+            var allTurns = chatGame.getCurrentGame().getTurns();
+            StringBuilder sb = new StringBuilder();
+            int ordinal = 1;
+            for (var turn : allTurns) {
+                sb.append(ordinal++);
+                sb.append(".");
+                sb.append("\t\t\t\t");
+                appendGuess(turn, sb);
+                sb.append("\t\t\t\t");
+                sb.append(getTurnLine(turn)).append("\n");
+                if (turn.isWin()) {
+                    sb.append(GameEmoji.HIT);
+                }
+            }
+            return sb.toString();
+        }
+
+        private String getTurnLine(IGuessTurn gameTurn) {
+            return "" + GameEmoji.getDigit(gameTurn.getBulls()) + GameEmoji.BULL +
+                    GameEmoji.getDigit(gameTurn.getCows()) + GameEmoji.COW;
+        }
+
+        private void appendGuess(IGuessTurn guessTurn, StringBuilder sb) {
+            for (int d : guessTurn.getDigits()) {
+                sb.append(d);
+            }
+        }
+    },
+    SHOW_WIN_RESULT {
+        @Override
+        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+            AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
+            commandSupplier.get().ifLeftOrElse(
+                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
+                    r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
+            return reply.get();
+        }
+
+        public String displayEmojiResult(IChatGame chatGame) {
+            var guessGame = chatGame.getCurrentGame();
+            StringBuilder sb = new StringBuilder();
+            if (guessGame.isWin()) {
+                sb.append(GameEmoji.HIT);
+            }
+            return sb.toString();
+        }
+    },
+    SHOW_WIN_MESSAGE {
+        @Override
+        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+            AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
+            commandSupplier.get().ifLeftOrElse(
+                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
+                    r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
+            return reply.get();
+        }
+
+        public String displayEmojiResult(IChatGame chatGame) {
+            var guessGame = chatGame.getCurrentGame();
+            if (guessGame.isWin()) {
+                StringBuilder sb = new StringBuilder("You are win! Secret guess is ");
+                appendGuess(guessGame.getTurns().getLast(), sb);
+                sb.append(". Number of turns is ");
+                sb.append(guessGame.getTurns().size());
+                return sb.toString();
+            }
+            return "";
+        }
+
+        private void appendGuess(IGuessTurn guessTurn, StringBuilder sb) {
+            for (int d : guessTurn.getDigits()) {
+                sb.append(d);
+            }
         }
     },
     UNKNOWN {

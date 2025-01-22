@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedList;
 import java.util.Optional;
 
 @Slf4j
@@ -83,7 +84,7 @@ class ChatGameSvc implements ChatGameService {
     }
 
     @Override
-    public Either<IGuessTurn, ChatGameException> makeTurn(Long chatId, String guessMsg) {
+    public Either<IChatGame, ChatGameException> makeTurn(Long chatId, String guessMsg) {
         try {
             ChatGame chatGame = getChatGame(chatId, false);
             var guessGame = Optional.ofNullable(chatGame.getCurrentGame()).orElseThrow(
@@ -95,7 +96,9 @@ class ChatGameSvc implements ChatGameService {
             chatGame.addTurn(currentTurn);
             chatRepo.makeTurn(chatGame);
 
-            return Either.left(convertTurn(currentTurn));
+            //return Either.left(convertTurn(currentTurn));
+            chatGame = getChatGame(chatId, false);
+            return Either.left(convertChatGame(chatGame));
         } catch (GuessComplexityException | GuessTurnException e) {
             log.error(e.getMessage());
             return Either.right(new ChatGameException(chatId, e.getMessage()));
@@ -119,6 +122,30 @@ class ChatGameSvc implements ChatGameService {
 
             public int getComplexity() {
                 return source.getCurrentGame() == null ? -1 : source.getCurrentGame().getComplexity();
+            }
+
+            @Override
+            public IGuessGame getCurrentGame() {
+                return convertGuessGame(source.getCurrentGame());
+            }
+        };
+    }
+
+    private IGuessGame convertGuessGame(GuessGame source) {
+        return new IGuessGame() {
+
+            @Override
+            public boolean isWin() {
+                return source.isWin();
+            }
+
+            @Override
+            public LinkedList<IGuessTurn> getTurns() {
+                LinkedList<IGuessTurn> result = new LinkedList<>();
+                for (GuessTurn turn : source.getTurns()) {
+                    result.add(convertTurn(turn));
+                }
+                return result;
             }
         };
     }

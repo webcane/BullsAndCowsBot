@@ -7,4 +7,6 @@ public interface IChatGame {
     Integer getLastMessageId();
 
     int getComplexity();
+
+    IGuessGame getCurrentGame();
 }
