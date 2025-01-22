@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -18,48 +19,38 @@ import java.util.function.Supplier;
 enum GameCommand implements IGameCommand {
     NEW {
         @Override
-        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
             AtomicReference<BotApiMethod.BotApiMethodBuilder<?, ?, ?>> reply = new AtomicReference<>();
             commandSupplier.get().ifLeftOrElse(l -> reply.set(SendMessage.builder().chatId(l.getChatId())
                             .text(String.format("Enter a %d digit number", l.getComplexity()))),
                     r -> reply.set(SendMessage.builder().chatId(r.getChatId())
                             .text(r.getMessage())));
-            return reply.get();
+            return reply.get().build();
         }
     },
     INFO,
     SCORE,
     DELETE {
         @Override
-        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
             AtomicReference<BotApiMethod.BotApiMethodBuilder<?, ?, ?>> reply = new AtomicReference<>();
             commandSupplier.get().ifLeftOrElse(l -> reply.set(DeleteMessage.builder().chatId(l.getChatId())
                             .messageId(l.getLastMessageId())),
                     r -> reply.set(SendMessage.builder().chatId(r.getChatId())
                             .text(r.getMessage())));
-            return reply.get();
+            return reply.get().build();
         }
     },
 
-    REPLACE_MESSAGE {
-        @Override
-        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            AtomicReference<BotApiMethod.BotApiMethodBuilder<?, ?, ?>> reply = new AtomicReference<>();
-            commandSupplier.get().ifLeftOrElse(l -> reply.set(DeleteMessage.builder().chatId(l.getChatId())
-                            .messageId(l.getLastMessageId())),
-                    r -> reply.set(SendMessage.builder().chatId(r.getChatId())
-                            .text(r.getMessage())));
-            return reply.get();
-        }
-    },
+    REPLACE_MESSAGE,
     SHOW_LAST_TURN_RESULT {
         @Override
-        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
             AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
             commandSupplier.get().ifLeftOrElse(
                     chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
                     r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
-            return reply.get();
+            return reply.get().build();
         }
 
         public String displayEmojiResult(IChatGame chatGame) {
@@ -75,15 +66,16 @@ enum GameCommand implements IGameCommand {
     },
     SHOW_ALL_TURNS_RESULT {
         @Override
-        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
             AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
             commandSupplier.get().ifLeftOrElse(
                     chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
                     r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
-            return reply.get();
+            return reply.get().build();
         }
 
         public String displayEmojiResult(IChatGame chatGame) {
+            // TODO table
             var allTurns = chatGame.getCurrentGame().getTurns();
             StringBuilder sb = new StringBuilder();
             int ordinal = 1;
@@ -94,9 +86,6 @@ enum GameCommand implements IGameCommand {
                 appendGuess(turn, sb);
                 sb.append("\t\t\t\t");
                 sb.append(getTurnLine(turn)).append("\n");
-                if (turn.isWin()) {
-                    sb.append(GameEmoji.HIT);
-                }
             }
             return sb.toString();
         }
@@ -114,12 +103,12 @@ enum GameCommand implements IGameCommand {
     },
     SHOW_WIN_RESULT {
         @Override
-        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
             AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
             commandSupplier.get().ifLeftOrElse(
                     chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
                     r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
-            return reply.get();
+            return reply.get().build();
         }
 
         public String displayEmojiResult(IChatGame chatGame) {
@@ -133,12 +122,12 @@ enum GameCommand implements IGameCommand {
     },
     SHOW_WIN_MESSAGE {
         @Override
-        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
             AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
             commandSupplier.get().ifLeftOrElse(
                     chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
                     r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
-            return reply.get();
+            return reply.get().build();
         }
 
         public String displayEmojiResult(IChatGame chatGame) {
@@ -159,11 +148,19 @@ enum GameCommand implements IGameCommand {
             }
         }
     },
+    NEW_GAME_WARN {
+        @Override
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+            var chatGame = commandSupplier.get().getLeft().orElseThrow();
+            return SendMessage.builder().text("Please, start another game using /new command")
+                    .chatId(chatGame.getChatId()).build();
+        }
+    },
     UNKNOWN {
         @Override
-        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
             ChatGameException ex = commandSupplier.get().getRight().orElseThrow();
-            return SendMessage.builder().chatId(ex.getChatId()).text(ex.getMessage());
+            return SendMessage.builder().chatId(ex.getChatId()).text(ex.getMessage()).build();
         }
 
         public boolean isUnknown() {
@@ -197,8 +194,8 @@ enum GameCommand implements IGameCommand {
     }
 
     @Override
-    public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-        // TODO
+    public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+        // do not send any telegram messages
         return null;
     }
 

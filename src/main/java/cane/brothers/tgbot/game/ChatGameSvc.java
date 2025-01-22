@@ -63,20 +63,11 @@ class ChatGameSvc implements ChatGameService {
     }
 
     @Override
-    public boolean isGameStarted(Long chatId) {
-        try {
-            return getChatGame(chatId, false).getCurrentGame() != null;
-        } catch (ChatGameException e) {
-            log.error(e.getMessage());
-            return false;
-        }
-    }
-
-    @Override
-    public boolean isGameFinished(Long chatId) {
+    public boolean isGameInProgress(Long chatId) {
         try {
             var guessGame = getChatGame(chatId, false).getCurrentGame();
-            return guessGame.isWin();
+            // isGameStarted && !isGameFinished
+            return guessGame != null && !guessGame.isWin();
         } catch (ChatGameException e) {
             log.error(e.getMessage());
             return false;
@@ -208,7 +199,7 @@ class ChatGameSvc implements ChatGameService {
     }
 
     @Override
-    public void updateReplaceMessage(Long chatId) {
+    public Either<IChatGame, ChatGameException> updateReplaceMessage(Long chatId) {
         try {
             // replace message or not
             var chatGame = getChatGame(chatId, false);
@@ -216,8 +207,12 @@ class ChatGameSvc implements ChatGameService {
             log.info(replaceMessage ? "enable replace_message" : "disable message_replace. keep all");
             chatGame.setReplaceMessage(replaceMessage);
             chatRepo.updateReplaceMessage(chatGame);
+
+            chatGame = getChatGame(chatId, false);
+            return Either.left(convertChatGame(chatGame));
         } catch (Exception ex) {
             log.error(ex.getMessage());
+            return Either.right(new ChatGameException(chatId, ex.getMessage()));
         }
     }
 

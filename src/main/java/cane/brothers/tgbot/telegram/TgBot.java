@@ -14,7 +14,6 @@ import org.telegram.telegrambots.longpolling.starter.AfterBotRegistration;
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -57,52 +56,32 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
                 // registered command
                 if (update.getMessage().isCommand()) {
                     GameCommand command = GameCommand.fromString(userMessage);
-
-                    // action command
-                    if (GameCommand.REPLACE_MESSAGE == command) {
-                        botGame.updateReplaceMessage(chatId);
-                    }
-                    // message command
-                    else {
-                        BotApiMethod<?> commandReply = getCommandReply(chatId, userMessage);
-                        var lastMethod = sendMessage(commandReply);
-
-                        saveGameMessage(chatId, lastMethod);
-                    }
+                    replyCommand(chatId, command, userMessage);
                 }
 
                 // guess message
                 else if (update.getMessage().hasText()) {
-
-                    if (botGame.isGameStarted(chatId) && !botGame.isGameFinished(chatId)) {
+                    if (botGame.isGameInProgress(chatId)) {
                         updateGameMessage(chatId);
 
-                        var commandReply = GameCommand.SHOW_ALL_TURNS_RESULT.getReply(() -> botGame.makeTurn(chatId, userMessage));
-                        var lastMethod = sendMessage(commandReply.build());
-
+                        var lastMethod = replyCommand(chatId, GameCommand.SHOW_ALL_TURNS_RESULT, userMessage);
                         saveGameMessage(chatId, lastMethod);
 
                         // show win
-                        if(botGame.isGameFinished(chatId)) {
-                            commandReply = GameCommand.SHOW_WIN_RESULT.getReply(() -> botGame.getChatGame(chatId));
-                            sendMessage(commandReply.build());
-
-                            commandReply = GameCommand.SHOW_WIN_MESSAGE.getReply(() -> botGame.getChatGame(chatId));
-                            sendMessage(commandReply.build());
+                        if (!botGame.isGameInProgress(chatId)) {
+                            replyCommand(chatId, GameCommand.SHOW_WIN_RESULT, userMessage);
+                            replyCommand(chatId, GameCommand.SHOW_WIN_MESSAGE, userMessage);
                         }
                     } else {
-                        var commandReply = SendMessage.builder().text("Please, start another game using /new command")
-                                .chatId(chatId).build();
-                        sendMessage(commandReply);
+                        var lastMethod = replyCommand(chatId, GameCommand.NEW_GAME_WARN, userMessage);
+                        saveGameMessage(chatId, lastMethod);
                     }
                 }
             } catch (TelegramApiException tex) {
                 log.error("Can't send message to telegram", tex);
                 try {
                     var msg = String.format("An error occurred while processing the request.\n %s", tex.getMessage());
-                    SendMessage fallbackMessage = SendMessage.builder().chatId(chatId).text(msg).build();
-
-                    sendMessage(fallbackMessage);
+                    replyCommand(chatId, GameCommand.UNKNOWN, msg);
                 } catch (TelegramApiException ex) {
                     log.error("Can't send fallback message to telegram", ex);
                 }
@@ -111,11 +90,9 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
                 log.error("Exception occurred", ex);
 
                 if (botGame.isDebug(chatId)) {
-                    var errorMessage = String.format("%s %s", GameEmoji.WARN, ex.getMessage());
-                    var errorReply = SendMessage.builder().text(errorMessage).chatId(chatId).build();
-
                     try {
-                        sendMessage(errorReply);
+                        var errorMessage = String.format("%s %s", GameEmoji.WARN, ex.getMessage());
+                        replyCommand(chatId, GameCommand.UNKNOWN, errorMessage);
                     } catch (TelegramApiException exx) {
                         log.error("Can't send fallback message to telegram", exx);
                     }
@@ -126,9 +103,7 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
 
     private void updateGameMessage(Long chatId) throws TelegramApiException {
         if (botGame.isReplaceMessage(chatId)) {
-
-            var messageBuilder = GameCommand.DELETE.getReply(() -> botGame.getChatGame(chatId));
-            sendMessage(messageBuilder.build());
+            replyCommand(chatId, GameCommand.DELETE, null);
         }
     }
 
@@ -139,26 +114,33 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
     }
 
 
-    protected BotApiMethod<? extends Serializable> getCommandReply(Long chatId, String userMessage) {
+    protected Serializable replyCommand(Long chatId, GameCommand command, String userMessage) throws TelegramApiException {
+        BotApiMethod<?> commandReply;
 
-        GameCommand command = GameCommand.fromString(userMessage);
-
+        // start new game
         if (GameCommand.NEW == command) {
             // TODO game complexity
-            return command.getReply(() -> botGame.newGame(chatId, 4))
-                    .build();
-        } else if (GameCommand.DELETE == command) {
-            return command.getReply(() -> botGame.getChatGame(chatId))
-                    .build();
-        } else {
-            return GameCommand.UNKNOWN.getReply(() ->
-                            Either.right(new ChatGameException(chatId, "unknown command " + userMessage)))
-                    .build();
+            commandReply = command.getReply(() -> botGame.newGame(chatId, 4));
         }
-    }
+        // action command
+        else if (GameCommand.REPLACE_MESSAGE == command) {
+            commandReply = command.getReply(() -> botGame.updateReplaceMessage(chatId));
+        }
+        // make guess turn
+        else if (GameCommand.SHOW_ALL_TURNS_RESULT == command) {
+            commandReply = command.getReply(() -> botGame.makeTurn(chatId, userMessage));
+        }
+        // unknown command || fallback message
+        else if (command.isUnknown()) {
+            commandReply = command.getReply(() ->
+                    Either.right(new ChatGameException(chatId, userMessage)));
+        }
+        // all other known commands
+        else {
+            commandReply = command.getReply(() -> botGame.getChatGame(chatId));
+        }
 
-    protected Serializable sendMessage(BotApiMethod<? extends Serializable> sendMessage) throws TelegramApiException {
-        return telegramClient.execute(sendMessage);
+        // send message if have any
+        return commandReply == null ? null : telegramClient.execute(commandReply);
     }
-
 }

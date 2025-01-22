@@ -4,10 +4,11 @@ import io.jbock.util.Either;
 
 public interface ChatGameService {
 
+    boolean isGameInProgress(Long chatId);
 
-    boolean isGameStarted(Long chatId);
+    boolean isReplaceMessage(Long chatId);
 
-    boolean isGameFinished(Long chatId);
+    boolean isDebug(Long chatId);
 
     Either<IChatGame, ChatGameException> getChatGame(Long chatId);
 
@@ -15,11 +16,9 @@ public interface ChatGameService {
 
     Either<IChatGame, ChatGameException> makeTurn(Long chatId, String guessMsg);
 
+    Either<IChatGame, ChatGameException> updateReplaceMessage(Long chatId);
+
     void setLastMessageId(Long chatId, Integer messageId);
 
-    boolean isReplaceMessage(Long chatId);
 
-    void updateReplaceMessage(Long chatId);
-
-    boolean isDebug(Long chatId);
 }
