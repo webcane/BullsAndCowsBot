@@ -15,4 +15,7 @@ public interface ChatGameService {
     Either<IGuessTurn, ChatGameException> makeTurn(Long chatId, String guessMsg);
 
     void setLastMessageId(Long chatId, Integer messageId);
+
+    boolean isReplaceMessage(Long chatId);
+    void updateReplaceMessage(Long chatId);
 }

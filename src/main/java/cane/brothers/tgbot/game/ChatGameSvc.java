@@ -158,4 +158,28 @@ class ChatGameSvc implements ChatGameService {
             log.error(ex.getMessage());
         }
     }
+
+    @Override
+    public boolean isReplaceMessage(Long chatId) {
+        try {
+            return getChatGame(chatId, false).isReplaceMessage();
+        } catch (ChatGameException e) {
+            log.error(e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public void updateReplaceMessage(Long chatId) {
+        try {
+            // replace message or not
+            var chatGame = getChatGame(chatId, false);
+            var replaceMessage = !chatGame.isReplaceMessage();
+            log.info(replaceMessage ? "enable replace_message" : "disable message_replace. keep all");
+            chatGame.setReplaceMessage(replaceMessage);
+            chatRepo.updateReplaceMessage(chatGame);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
 }

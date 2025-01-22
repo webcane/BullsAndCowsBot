@@ -33,7 +33,6 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
 
 
     private boolean debug = true;
-    private boolean updateGameMessage = true;
 
     @Override
     public String getBotToken() {
@@ -60,10 +59,19 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
             try {
                 // command
                 if (update.getMessage().isCommand()) {
-                    BotApiMethod<?> commandReply = getCommandReply(chatId, userMessage);
-                    var lastMethod = sendMessage(commandReply);
+                    GameCommand command = GameCommand.fromString(userMessage);
 
-                    saveGameMessage(chatId, lastMethod);
+                    // action command
+                    if (GameCommand.REPLACE_MESSAGE == command) {
+                        botGame.updateReplaceMessage(chatId);
+                    }
+                    // message command
+                    else {
+                        BotApiMethod<?> commandReply = getCommandReply(chatId, userMessage);
+                        var lastMethod = sendMessage(commandReply);
+
+                        saveGameMessage(chatId, lastMethod);
+                    }
                 }
 
                 // guess
@@ -111,14 +119,16 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
     }
 
     private void updateGameMessage(Long chatId) throws TelegramApiException {
-        if (updateGameMessage) {
+        if (botGame.isReplaceMessage(chatId)) {
+
             var messageBuilder = GameCommand.DELETE.getReply(() -> botGame.getChatGame(chatId));
             sendMessage(messageBuilder.build());
         }
     }
 
     private void saveGameMessage(Long chatId, Serializable lastMethod) {
-        if (updateGameMessage) {
+        if (botGame.isReplaceMessage(chatId)) {
+
             if (lastMethod instanceof Message msg) {
                 botGame.setLastMessageId(chatId, msg.getMessageId());
             }

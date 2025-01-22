@@ -77,4 +77,19 @@ class ChatGameAggregateRepositoryImpl implements ChatGameAggregateRepository {
             throw new OptimisticLockingFailureException(msg);
         }
     }
+
+    @Transactional
+    @Override
+    public void updateReplaceMessage(ChatGame chat) {
+        MapSqlParameterSource updateParams = new MapSqlParameterSource();
+        updateParams.addValue("id", chat.getId(), JDBCType.OTHER.getVendorTypeNumber());
+        updateParams.addValue("version", chat.getVersion(), JDBCType.INTEGER.getVendorTypeNumber());
+        updateParams.addValue("replace_message", chat.isReplaceMessage(), JDBCType.BOOLEAN.getVendorTypeNumber());
+        final int updateCount = template.update("UPDATE chat_game SET version = :version + 1, replace_message = :replace_message WHERE id = :id AND version = :version", updateParams);
+        if (updateCount != 1) {
+            var msg = String.format("chat game %d was changed before a replace_message was given", chat.getChatId());
+            throw new OptimisticLockingFailureException(msg);
+        }
+    }
+
 }

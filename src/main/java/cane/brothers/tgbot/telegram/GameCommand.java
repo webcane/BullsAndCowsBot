@@ -38,6 +38,18 @@ enum GameCommand implements IGameCommand {
             return reply.get();
         }
     },
+
+    REPLACE_MESSAGE {
+        @Override
+        public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+            AtomicReference<BotApiMethod.BotApiMethodBuilder<?, ?, ?>> reply = new AtomicReference<>();
+            commandSupplier.get().ifLeftOrElse(l -> reply.set(DeleteMessage.builder().chatId(l.getChatId())
+                            .messageId(l.getLastMessageId())),
+                    r -> reply.set(SendMessage.builder().chatId(r.getChatId())
+                            .text(r.getMessage())));
+            return reply.get();
+        }
+    },
     UNKNOWN {
         @Override
         public BotApiMethod.BotApiMethodBuilder<?, ?, ?> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
@@ -51,12 +63,11 @@ enum GameCommand implements IGameCommand {
     };
 
     public static GameCommand fromString(String str) {
-        GameCommand cmd;
         if (str == null || str.length() < 2) {
-            cmd = GameCommand.UNKNOWN;
+            return GameCommand.UNKNOWN;
         }
 
-        cmd = Arrays.stream(GameCommand.values())
+        var cmd = Arrays.stream(GameCommand.values())
                 .filter(command -> command.toString().equals(str))
                 .findFirst().orElse(GameCommand.UNKNOWN);
 

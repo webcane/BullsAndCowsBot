@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS chat_game (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     chat_id BIGINT NOT NULL UNIQUE,
     last_message_id INTEGER,
+    replace_message boolean,
     version INT NOT NULL
 );
 
