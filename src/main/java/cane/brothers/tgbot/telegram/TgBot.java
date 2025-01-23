@@ -4,6 +4,7 @@ import cane.brothers.tgbot.AppProperties;
 import cane.brothers.tgbot.emoji.GameEmoji;
 import cane.brothers.tgbot.game.ChatGameException;
 import cane.brothers.tgbot.game.ChatGameService;
+import cane.brothers.tgbot.game.ChatGameSettingsService;
 import io.jbock.util.Either;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
     private final TelegramClient telegramClient;
     private final AppProperties properties;
     private final ChatGameService botGame;
+    private final ChatGameSettingsService botSettings;
 
     @Override
     public String getBotToken() {
@@ -53,10 +55,18 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
             var userMessage = update.getMessage().getText();
 
             try {
+                // keyboard menu
+                // TODO
+                //         // action command
+                //        else if (GameCommand.REPLACE_MESSAGE == command) {
+                //            commandReply = command.getReply(() -> botSettings.updateReplaceMessage(chatId));
+                //        }
+
                 // registered command
                 if (update.getMessage().isCommand()) {
                     GameCommand command = GameCommand.fromString(userMessage);
-                    replyCommand(chatId, command, userMessage);
+                    var lastMethod = replyCommand(chatId, command, userMessage);
+                    saveGameMessage(chatId, lastMethod);
                 }
 
                 // guess message
@@ -89,7 +99,7 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
             } catch (Exception ex) {
                 log.error("Exception occurred", ex);
 
-                if (botGame.isDebug(chatId)) {
+                if (botSettings.isDebug(chatId)) {
                     try {
                         var errorMessage = String.format("%s %s", GameEmoji.WARN, ex.getMessage());
                         replyCommand(chatId, GameCommand.UNKNOWN, errorMessage);
@@ -102,7 +112,7 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
     }
 
     private void updateGameMessage(Long chatId) throws TelegramApiException {
-        if (botGame.isReplaceMessage(chatId)) {
+        if (botSettings.isReplaceMessage(chatId)) {
             replyCommand(chatId, GameCommand.DELETE, null);
         }
     }
@@ -114,17 +124,13 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
     }
 
 
-    protected Serializable replyCommand(Long chatId, GameCommand command, String userMessage) throws TelegramApiException {
+    protected Serializable replyCommand(Long chatId, IGameCommand command, String userMessage) throws TelegramApiException {
         BotApiMethod<?> commandReply;
 
         // start new game
         if (GameCommand.NEW == command) {
-            // TODO game complexity
-            commandReply = command.getReply(() -> botGame.newGame(chatId, 4));
-        }
-        // action command
-        else if (GameCommand.REPLACE_MESSAGE == command) {
-            commandReply = command.getReply(() -> botGame.updateReplaceMessage(chatId));
+            var complexity = botSettings.getComplexity(chatId);
+            commandReply = command.getReply(() -> botGame.newGame(chatId, complexity));
         }
         // make guess turn
         else if (GameCommand.SHOW_ALL_TURNS_RESULT == command) {
@@ -143,4 +149,6 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
         // send message if have any
         return commandReply == null ? null : telegramClient.execute(commandReply);
     }
+
+    // TODO do command
 }

@@ -6,6 +6,7 @@ import cane.brothers.game.IGuessTurn;
 import io.jbock.util.Either;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jdbc.core.mapping.AggregateReference;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
@@ -17,6 +18,7 @@ import java.util.Optional;
 class ChatGameSvc implements ChatGameService {
 
     private final ChatGameRepository chatRepo;
+    private final ChatGameSettingsRepository settingsRepo;
 
     @Override
     public Either<IChatGame, ChatGameException> getChatGame(Long chatId) {
@@ -52,6 +54,11 @@ class ChatGameSvc implements ChatGameService {
             chatRepo.startNewGame(chatGame);
 
             chatGame = getChatGame(chatId, false);
+
+            // initial save settings
+            var gameSettings = new ChatGameSettings(complexity, AggregateReference.to(chatGame.getId()));
+            settingsRepo.save(gameSettings);
+
             return Either.left(convertChatGame(chatGame));
         } catch (GuessComplexityException e) {
             log.error(e.getMessage());
@@ -99,6 +106,7 @@ class ChatGameSvc implements ChatGameService {
         }
     }
 
+    // TODO exctract converters
     private IChatGame convertChatGame(ChatGame source) {
         return new IChatGame() {
             @Override
@@ -185,44 +193,6 @@ class ChatGameSvc implements ChatGameService {
             chatRepo.updateMessageId(chatGame);
         } catch (Exception ex) {
             log.error(ex.getMessage());
-        }
-    }
-
-    @Override
-    public boolean isReplaceMessage(Long chatId) {
-        try {
-            return getChatGame(chatId, false).isReplaceMessage();
-        } catch (ChatGameException e) {
-            log.error(e.getMessage());
-            return false;
-        }
-    }
-
-    @Override
-    public Either<IChatGame, ChatGameException> updateReplaceMessage(Long chatId) {
-        try {
-            // replace message or not
-            var chatGame = getChatGame(chatId, false);
-            var replaceMessage = !chatGame.isReplaceMessage();
-            log.info(replaceMessage ? "enable replace_message" : "disable message_replace. keep all");
-            chatGame.setReplaceMessage(replaceMessage);
-            chatRepo.updateReplaceMessage(chatGame);
-
-            chatGame = getChatGame(chatId, false);
-            return Either.left(convertChatGame(chatGame));
-        } catch (Exception ex) {
-            log.error(ex.getMessage());
-            return Either.right(new ChatGameException(chatId, ex.getMessage()));
-        }
-    }
-
-    @Override
-    public boolean isDebug(Long chatId) {
-        try {
-            return getChatGame(chatId, false).isDebug();
-        } catch (ChatGameException e) {
-            log.error(e.getMessage());
-            return false;
         }
     }
 }

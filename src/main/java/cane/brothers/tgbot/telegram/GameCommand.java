@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 @Slf4j
-enum GameCommand implements IGameCommand {
+public enum GameCommand implements IGameCommand {
     NEW {
         @Override
         public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
@@ -41,8 +41,6 @@ enum GameCommand implements IGameCommand {
             return reply.get().build();
         }
     },
-
-    REPLACE_MESSAGE,
     SHOW_LAST_TURN_RESULT {
         @Override
         public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {

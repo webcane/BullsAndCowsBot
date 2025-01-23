@@ -7,6 +7,4 @@ interface ChatGameAggregateRepository {
     void makeTurn(ChatGame chat);
 
     void updateMessageId(ChatGame chat);
-
-    void updateReplaceMessage(ChatGame chat);
 }
