@@ -159,7 +159,7 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
     }
 
 
-    protected Serializable replyCommand(Long chatId, IGameCommand command, String userMessage) throws TelegramApiException {
+    Serializable replyCommand(Long chatId, IGameCommand command, String userMessage) throws TelegramApiException {
         BotApiMethod<?> commandReply;
 
         // start new game
