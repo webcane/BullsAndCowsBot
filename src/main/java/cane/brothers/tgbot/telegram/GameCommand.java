@@ -9,9 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -30,6 +36,44 @@ public enum GameCommand implements IGameCommand {
     },
     INFO,
     SCORE,
+    SETTINGS {
+        // replace_message - замещать последнее сообщение
+        @Override
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+            var chatGame = commandSupplier.get().getLeft().orElseThrow();
+            SendMessage sendMessage = SendMessage.builder().text("Bulls & Cows settings:").chatId(chatGame.getChatId()).build();
+            sendMessage.setReplyMarkup(getKeyboardMarkup());
+            return sendMessage;
+        }
+
+        //      ReplyKeyboard getKeyboard() {
+//          return ReplyKeyboardMarkup.builder()
+////                  .keyboardRow(new InlineKeyboardRow("Complexity", "Replace reply", "Show All turns"))
+//                  .keyboardRow(new KeyboardRow("Complexity", "Replace reply", "Show All turns"))
+//                  .build();
+//      }
+        ReplyKeyboard getKeyboardMarkup() {
+            var complexityButton = InlineKeyboardButton.builder().text("Complexity").callbackData("complexity").build();
+            return InlineKeyboardMarkup.builder()
+                    //                  .keyboardRow(new InlineKeyboardRow("Complexity", "Replace reply", "Show All turns"))
+                    .keyboardRow(new InlineKeyboardRow(List.of(complexityButton)))
+                    .build();
+        }
+    },
+    HIDE_SETTINGS {
+        // replace_message - замещать последнее сообщение
+        @Override
+        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
+            AtomicReference<BotApiMethod.BotApiMethodBuilder<?, ?, ?>> reply = new AtomicReference<>();
+
+            commandSupplier.get().ifLeftOrElse(
+                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId())
+                            .replyMarkup(new ReplyKeyboardRemove(true))),
+                    r -> reply.set(SendMessage.builder().chatId(r.getChatId())
+                            .text(r.getMessage())));
+            return reply.get().build();
+        }
+    },
     DELETE {
         @Override
         public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {

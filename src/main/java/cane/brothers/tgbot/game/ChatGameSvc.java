@@ -55,9 +55,14 @@ class ChatGameSvc implements ChatGameService {
 
             chatGame = getChatGame(chatId, false);
 
-            // initial save settings
-            var gameSettings = new ChatGameSettings(complexity, AggregateReference.to(chatGame.getId()));
-            settingsRepo.save(gameSettings);
+            ChatGameSettings gameSettings = settingsRepo.findByChatGame(chatGame)
+                    .orElse(new ChatGameSettings(complexity, AggregateReference.to(chatGame.getId())));
+
+            // set/update game complexity if necessary
+            if (gameSettings.getComplexity() != complexity) {
+                gameSettings.setComplexity(complexity);
+                settingsRepo.save(gameSettings);
+            }
 
             return Either.left(convertChatGame(chatGame));
         } catch (GuessComplexityException e) {
