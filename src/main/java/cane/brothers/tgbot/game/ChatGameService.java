@@ -1,18 +1,20 @@
 package cane.brothers.tgbot.game;
 
-import io.jbock.util.Either;
-
 public interface ChatGameService {
 
-    boolean isGameInProgress(Long chatId);
+    boolean isInProgress(Long chatId) throws ChatGameException;
 
-    Either<IChatGame, ChatGameException> getChatGame(Long chatId);
+    IChatGame getChatGame(Long chatId) throws ChatGameException;
 
-    Either<IChatGame, ChatGameException> newGame(Long chatId, int complexity);
+    void finishGame(Long chatId) throws ChatGameException;
 
-    Either<IChatGame, ChatGameException> makeTurn(Long chatId, String guessMsg);
+    boolean isWin(Long chatId) throws ChatGameException;
 
-    void setLastMessageId(Long chatId, Integer messageId);
+    IChatGame newGame(Long chatId) throws ChatGameException;
 
+    IChatGame makeTurn(Long chatId, String guessMsg) throws ChatGameException;
 
+    void setLastMessageId(Long chatId, Integer messageId) throws ChatGameException;
+
+    Integer getLastMessageId(Long chatId) throws ChatGameException;
 }

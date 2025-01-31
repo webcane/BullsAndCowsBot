@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS guess_game (
     complexity INTEGER CHECK (complexity > 0 AND complexity < 10),
     secret INTEGER[],
     ordinal INTEGER NOT NULL CHECK (ordinal >= 0),
-    chat_game UUID NOT NULL REFERENCES chat_game(id)
+    chat_game UUID NOT NULL REFERENCES chat_game(id),
+    finished boolean DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS guess_turn (
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS chat_game_settings (
     id SERIAL PRIMARY KEY,
     complexity INTEGER CHECK (complexity > 0 AND complexity < 10),
     replace_message boolean DEFAULT TRUE,
+    show_all_turns boolean DEFAULT TRUE,
     debug boolean DEFAULT FALSE,
-    chat_game UUID NOT NULL UNIQUE REFERENCES chat_game(id)
+    chat_id BIGINT NOT NULL UNIQUE
 );

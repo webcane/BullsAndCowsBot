@@ -10,7 +10,8 @@ import java.util.Optional;
 interface ChatGameSettingsRepository extends CrudRepository<ChatGameSettings, Integer> {
 
     // select chat_game_settings from chat_game_settings left join chat_game ON chat_game_settings.chat = chat_game.id where chat_game.chat_id = 396702390
-    Optional<ChatGameSettings> findByChatGame(@Param("chat_game") ChatGame chatGame);
+    //Optional<ChatGameSettings> findByChatGame(@Param("chat_game") ChatGame chatGame);
+    Optional<ChatGameSettings> findByChatId(@Param("chat_id") Long chatId);
 
     // TODO
 //    @Transactional

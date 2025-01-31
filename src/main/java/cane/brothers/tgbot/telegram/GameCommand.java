@@ -3,157 +3,111 @@ package cane.brothers.tgbot.telegram;
 import cane.brothers.game.IGuessTurn;
 import cane.brothers.tgbot.emoji.GameEmoji;
 import cane.brothers.tgbot.game.ChatGameException;
+import cane.brothers.tgbot.game.ChatGameService;
+import cane.brothers.tgbot.game.ChatGameSettingsService;
 import cane.brothers.tgbot.game.IChatGame;
-import io.jbock.util.Either;
 import lombok.extern.slf4j.Slf4j;
-import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
+import org.jetbrains.annotations.NotNull;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
-
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.message.Message;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 @Slf4j
-public enum GameCommand implements IGameCommand {
+enum GameCommand implements IGameCommand {
+    SCORE {
+        @Override
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            // TODO score
+            log.info("show score");
+        }
+    },
     NEW {
         @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            AtomicReference<BotApiMethod.BotApiMethodBuilder<?, ?, ?>> reply = new AtomicReference<>();
-            commandSupplier.get().ifLeftOrElse(l -> reply.set(SendMessage.builder().chatId(l.getChatId())
-                            .text(String.format("Enter a %d digit number", l.getComplexity()))),
-                    r -> reply.set(SendMessage.builder().chatId(r.getChatId())
-                            .text(r.getMessage())));
-            return reply.get().build();
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            var chatId = message.getChatId();
+            var chatGame = gameService.newGame(chatId);
+            var reply = SendMessage.builder().chatId(chatGame.getChatId())
+                    .text(String.format("Enter a %d digit number", chatGame.getComplexity())).build();
+            telegramClient.execute(reply);
         }
     },
-    INFO,
-    SCORE,
-    SETTINGS {
-        // replace_message - замещать последнее сообщение
-        @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            var chatGame = commandSupplier.get().getLeft().orElseThrow();
-            SendMessage sendMessage = SendMessage.builder().text("Bulls & Cows settings:").chatId(chatGame.getChatId()).build();
-            sendMessage.setReplyMarkup(getKeyboardMarkup());
-            return sendMessage;
-        }
 
-        //      ReplyKeyboard getKeyboard() {
-//          return ReplyKeyboardMarkup.builder()
-////                  .keyboardRow(new InlineKeyboardRow("Complexity", "Replace reply", "Show All turns"))
-//                  .keyboardRow(new KeyboardRow("Complexity", "Replace reply", "Show All turns"))
-//                  .build();
-//      }
-        ReplyKeyboard getKeyboardMarkup() {
-            var complexityButton = InlineKeyboardButton.builder().text("Complexity").callbackData("complexity").build();
-            return InlineKeyboardMarkup.builder()
-                    //                  .keyboardRow(new InlineKeyboardRow("Complexity", "Replace reply", "Show All turns"))
-                    .keyboardRow(new InlineKeyboardRow(List.of(complexityButton)))
+    SHOW_TURN_RESULTS {
+        @Override
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            var chatId = message.getChatId();
+            var chatGame = gameService.makeTurn(chatId, message.getText());
+
+            var reply = SendMessage.builder().chatId(chatGame.getChatId())
+                    .text(displayEmojiResult(chatGame, gameSettings.isShowAllTurns(chatId)))
                     .build();
-        }
-    },
-    HIDE_SETTINGS {
-        // replace_message - замещать последнее сообщение
-        @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            AtomicReference<BotApiMethod.BotApiMethodBuilder<?, ?, ?>> reply = new AtomicReference<>();
 
-            commandSupplier.get().ifLeftOrElse(
-                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId())
-                            .replyMarkup(new ReplyKeyboardRemove(true))),
-                    r -> reply.set(SendMessage.builder().chatId(r.getChatId())
-                            .text(r.getMessage())));
-            return reply.get().build();
-        }
-    },
-    DELETE {
-        @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            AtomicReference<BotApiMethod.BotApiMethodBuilder<?, ?, ?>> reply = new AtomicReference<>();
-            commandSupplier.get().ifLeftOrElse(l -> reply.set(DeleteMessage.builder().chatId(l.getChatId())
-                            .messageId(l.getLastMessageId())),
-                    r -> reply.set(SendMessage.builder().chatId(r.getChatId())
-                            .text(r.getMessage())));
-            return reply.get().build();
-        }
-    },
-    SHOW_LAST_TURN_RESULT {
-        @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
-            commandSupplier.get().ifLeftOrElse(
-                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
-                    r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
-            return reply.get().build();
-        }
+            var lastMethod = telegramClient.execute(reply);
+            gameService.setLastMessageId(chatId, lastMethod.getMessageId());
 
-        public String displayEmojiResult(IChatGame chatGame) {
-            var gameTurn = chatGame.getCurrentGame().getTurns().getLast();
-            return getTurnLine(gameTurn) + "\n"
-                    + (gameTurn.isWin() ? GameEmoji.HIT : "");
-        }
-
-        private String getTurnLine(IGuessTurn gameTurn) {
-            return "" + GameEmoji.getDigit(gameTurn.getBulls()) + GameEmoji.BULL +
-                    GameEmoji.getDigit(gameTurn.getCows()) + GameEmoji.COW;
-        }
-    },
-    SHOW_ALL_TURNS_RESULT {
-        @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
-            commandSupplier.get().ifLeftOrElse(
-                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
-                    r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
-            return reply.get().build();
-        }
-
-        public String displayEmojiResult(IChatGame chatGame) {
-            // TODO table
-            var allTurns = chatGame.getCurrentGame().getTurns();
-            StringBuilder sb = new StringBuilder();
-            int ordinal = 1;
-            for (var turn : allTurns) {
-                sb.append(ordinal++);
-                sb.append(".");
-                sb.append("\t\t\t\t");
-                appendGuess(turn, sb);
-                sb.append("\t\t\t\t");
-                sb.append(getTurnLine(turn)).append("\n");
+            // show win
+            if (gameService.isWin(chatId)) {
+                GameCommand.SHOW_WIN_RESULT.execute(message, gameService, gameSettings, telegramClient);
+                GameCommand.SHOW_WIN_MESSAGE.execute(message, gameService, gameSettings, telegramClient);
             }
-            return sb.toString();
+
+            // remove last message id
+            gameService.setLastMessageId(chatId, null);
+
         }
 
-        private String getTurnLine(IGuessTurn gameTurn) {
+        public String displayEmojiResult(IChatGame chatGame, boolean showAllTurns) {
+            if (showAllTurns) {
+                // SHOW_ALL_TURNS_RESULT
+                // TODO table
+                var allTurns = chatGame.getCurrentGame().getTurns();
+                StringBuilder sb = new StringBuilder();
+                int ordinal = 1;
+                for (var turn : allTurns) {
+                    sb.append(ordinal++);
+                    sb.append(".");
+                    sb.append("\t\t\t\t");
+                    appendGuess(turn, sb);
+                    sb.append("\t\t\t\t");
+                    sb.append(getTurnLine(turn)).append("\n");
+                }
+                return sb.toString();
+            } else {
+                // SHOW_LAST_TURN_RESULT
+                var gameTurn = chatGame.getCurrentGame().getTurns().getLast();
+                return getTurnLine(gameTurn) + "\n"
+                        + (gameTurn.isWin() ? GameEmoji.HIT : "");
+            }
+        }
+
+        @NotNull
+        private String getTurnLine(@NotNull IGuessTurn gameTurn) {
             return "" + GameEmoji.getDigit(gameTurn.getBulls()) + GameEmoji.BULL +
                     GameEmoji.getDigit(gameTurn.getCows()) + GameEmoji.COW;
         }
 
-        private void appendGuess(IGuessTurn guessTurn, StringBuilder sb) {
+        private void appendGuess(@NotNull IGuessTurn guessTurn, StringBuilder sb) {
             for (int d : guessTurn.getDigits()) {
                 sb.append(d);
             }
         }
     },
+
     SHOW_WIN_RESULT {
         @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
-            commandSupplier.get().ifLeftOrElse(
-                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
-                    r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
-            return reply.get().build();
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            var chatId = message.getChatId();
+            var chatGame = gameService.getChatGame(chatId);
+
+            var reply = SendMessage.builder().chatId(chatGame.getChatId())
+                    .text(displayEmojiResult(chatGame)).build();
+            telegramClient.execute(reply);
         }
 
-        public String displayEmojiResult(IChatGame chatGame) {
+        public String displayEmojiResult(@NotNull IChatGame chatGame) {
             var guessGame = chatGame.getCurrentGame();
             StringBuilder sb = new StringBuilder();
             if (guessGame.isWin()) {
@@ -164,15 +118,16 @@ public enum GameCommand implements IGameCommand {
     },
     SHOW_WIN_MESSAGE {
         @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            AtomicReference<SendMessage.SendMessageBuilder<?, ?>> reply = new AtomicReference<>();
-            commandSupplier.get().ifLeftOrElse(
-                    chatGame -> reply.set(SendMessage.builder().chatId(chatGame.getChatId()).text(displayEmojiResult(chatGame))),
-                    r -> reply.set(SendMessage.builder().chatId(r.getChatId()).text(r.getMessage())));
-            return reply.get().build();
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            var chatId = message.getChatId();
+            var chatGame = gameService.getChatGame(chatId);
+
+            var reply = SendMessage.builder().chatId(chatGame.getChatId())
+                    .text(displayEmojiResult(chatGame)).build();
+            telegramClient.execute(reply);
         }
 
-        public String displayEmojiResult(IChatGame chatGame) {
+        public String displayEmojiResult(@NotNull IChatGame chatGame) {
             var guessGame = chatGame.getCurrentGame();
             if (guessGame.isWin()) {
                 StringBuilder sb = new StringBuilder("You are win! Secret guess is ");
@@ -184,61 +139,63 @@ public enum GameCommand implements IGameCommand {
             return "";
         }
 
-        private void appendGuess(IGuessTurn guessTurn, StringBuilder sb) {
+        private void appendGuess(@NotNull IGuessTurn guessTurn, StringBuilder sb) {
             for (int d : guessTurn.getDigits()) {
                 sb.append(d);
             }
         }
     },
+
     NEW_GAME_WARN {
         @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            var chatGame = commandSupplier.get().getLeft().orElseThrow();
-            return SendMessage.builder().text("Please, start another game using /new command")
-                    .chatId(chatGame.getChatId()).build();
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            var chatId = message.getChatId();
+            var reply = SendMessage.builder().chatId(chatId)
+                    .text("Please, start another game using /new command").build();
+
+            var lastMethod = telegramClient.execute(reply);
+            gameService.setLastMessageId(chatId, lastMethod.getMessageId());
         }
     },
-    UNKNOWN {
-        @Override
-        public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-            ChatGameException ex = commandSupplier.get().getRight().orElseThrow();
-            return SendMessage.builder().chatId(ex.getChatId()).text(ex.getMessage()).build();
-        }
 
-        public boolean isUnknown() {
-            return true;
+    DELETE_LAST_MESSAGE {
+        @Override
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            var chatId = message.getChatId();
+            var messageId = gameService.getLastMessageId(chatId);
+            if (messageId != null) {
+                var reply = DeleteMessage.builder().chatId(chatId)
+                        .messageId(messageId)
+                        .build();
+                telegramClient.execute(reply);
+            }
+
+        }
+    },
+    CALLBACK_NEW_GAME_WARN {
+        @Override
+        public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            var chatId = callbackQuery.getMessage().getChatId();
+            var reply = SendMessage.builder().chatId(chatId)
+                    .text("Please, start another game using /new command").build();
+
+            var lastMethod = telegramClient.execute(reply);
+            gameService.setLastMessageId(chatId, lastMethod.getMessageId());
         }
     };
 
-    public static GameCommand fromString(String str) {
-        if (str == null || str.length() < 2) {
-            return GameCommand.UNKNOWN;
-        }
-
-        var cmd = Arrays.stream(GameCommand.values())
-                .filter(command -> command.toString().equals(str))
-                .findFirst().orElse(GameCommand.UNKNOWN);
-
-        if (cmd.isUnknown()) {
-            log.warn("unknown command {}", str);
-        }
-        return cmd;
-    }
+//    UNKNOWN {
+//        @Override
+//        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+//            var reply = SendMessage.builder().chatId(message.getChatId())
+//                    .text("Unknown game command")
+//                    .build();
+//            telegramClient.execute(reply);
+//        }
+//    };
 
     @Override
     public String toString() {
         return String.format("/%s", name().toLowerCase());
     }
-
-    @Override
-    public boolean isUnknown() {
-        return false;
-    }
-
-    @Override
-    public BotApiMethod<? extends Serializable> getReply(Supplier<Either<IChatGame, ChatGameException>> commandSupplier) {
-        // do not send any telegram messages
-        return null;
-    }
-
 }

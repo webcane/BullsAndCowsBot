@@ -5,23 +5,24 @@ import cane.brothers.tgbot.emoji.GameEmoji;
 import cane.brothers.tgbot.game.ChatGameException;
 import cane.brothers.tgbot.game.ChatGameService;
 import cane.brothers.tgbot.game.ChatGameSettingsService;
-import io.jbock.util.Either;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.longpolling.BotSession;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
 import org.telegram.telegrambots.longpolling.starter.AfterBotRegistration;
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
-import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
-import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
+import org.telegram.telegrambots.meta.api.interfaces.BotApiObject;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
-import java.io.Serializable;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 @Slf4j
 @Component
@@ -53,89 +54,74 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
         Long chatId = null;
 
         try {
-            // callbacks
-            if (update.hasCallbackQuery()) {
+            Deque<IChatCommand> commands = new LinkedList<>();
+            BotApiObject data;
 
-                // keyboard menu
-                // TODO
-                //         // action command
-                //        else if (GameCommand.REPLACE_MESSAGE == command) {
-                //            commandReply = command.getReply(() -> botSettings.updateReplaceMessage(chatId));
-                //        }
-                var callbackQuery = update.getCallbackQuery();
-
-                chatId = callbackQuery.getMessage().getChatId();
-                Integer messageId = callbackQuery.getMessage().getMessageId();
-                // rem previous message
-                // replyCommand(chatId, GameCommand.DELETE, null);
-
-                AnswerCallbackQuery closeAnswer = AnswerCallbackQuery.builder()
-                        .callbackQueryId(callbackQuery.getId())
-                        .cacheTime(3600) // 1h
-                        .build();
-                telegramClient.execute(closeAnswer);
-                var callbackData = callbackQuery.getData();
-
-                CallbackCommand callbackCommand = CallbackCommand.fromString(callbackData, chatId, messageId);
-                var callbackReply = callbackCommand.replyCallback();
-
-                if (!callbackReply.isEmpty()) {
-                    for (var reply : callbackReply) {
-                        telegramClient.execute(reply);
-                    }
-                }
-                // TODO parse settings
-                else if (callbackData.contains("=")) {
-                    var commandSplit = callbackData.split("=");
-
-                    if ("complexity".equals(commandSplit[0])) {
-                        var complexity = Integer.valueOf(commandSplit[1]);
-                        log.info("set default game complexity to: " + complexity);
-                        botSettings.setComplexity(chatId, complexity);
-                    }
-                }
-            }
             // message
-            else if (update.hasMessage()) {
+            if (update.hasMessage()) {
                 chatId = update.getMessage().getChatId();
-                var userMessage = update.getMessage().getText();
+
+                var userMessage = update.getMessage();
+                var userText = userMessage.getText();
+                data = userMessage;
 
                 // registered command
                 if (update.getMessage().isCommand()) {
-                    GameCommand command = GameCommand.fromString(userMessage);
-
-                    var lastMethod = replyCommand(chatId, command, userMessage);
-                    saveGameMessage(chatId, lastMethod);
-                }
-                // guess message
-                else if (update.getMessage().hasText()) {
-                    if (botGame.isGameInProgress(chatId)) {
-
-                        if (botSettings.isReplaceMessage(chatId)) {
-                            replyCommand(chatId, GameCommand.DELETE, null);
-                        }
-
-                        var lastMethod = replyCommand(chatId, GameCommand.SHOW_ALL_TURNS_RESULT, userMessage);
-                        saveGameMessage(chatId, lastMethod);
-
-                        // show win
-                        if (!botGame.isGameInProgress(chatId)) {
-                            replyCommand(chatId, GameCommand.SHOW_WIN_RESULT, userMessage);
-                            replyCommand(chatId, GameCommand.SHOW_WIN_MESSAGE, userMessage);
-                        }
-                    } else {
-                        var lastMethod = replyCommand(chatId, GameCommand.NEW_GAME_WARN, userMessage);
-                        saveGameMessage(chatId, lastMethod);
+                    ICommandComposer chatCmd = ChatCommandComposer.fromString(userText);
+                    if (chatCmd.isUnknown()) {
+                        throw new ChatGameException(chatId, "Unrecognized message command: " + userText);
                     }
+
+                    commands = chatCmd.getCommands();
+                }
+
+                // game message
+                else if (update.getMessage().hasText()) {
+                    // compose game commands
+                    commands = composeGameCommands(chatId);
                 }
             }
+
+            // callbacks
+            else if (update.hasCallbackQuery()) {
+                var callbackQuery = update.getCallbackQuery();
+                chatId = callbackQuery.getMessage().getChatId();
+                var callbackData = callbackQuery.getData();
+                data = callbackQuery;
+
+                ICommandComposer chatCmd = ChatCommandComposer.fromString(callbackData);
+                commands = chatCmd.getCommands();
+            }
+
+            // unknown
+            else {
+                data = null;
+            }
+
+            handleCommands(commands.iterator(), data);
+
         } catch (TelegramApiException tex) {
             log.error("Can't send message to telegram", tex);
             try {
-                var msg = String.format("An error occurred while processing the request.\n %s", tex.getMessage());
-                replyCommand(chatId, GameCommand.UNKNOWN, msg);
+                if (chatId != null) {
+                    var errorMessage = String.format("An error occurred while processing the request.\n %s", tex.getMessage());
+                    replyError(chatId, errorMessage);
+                } else {
+                    log.error("Unknown the update type. " + update);
+                }
             } catch (TelegramApiException ex) {
                 log.error("Can't send fallback message to telegram", ex);
+            }
+
+        } catch (ChatGameException cex) {
+            log.error("Game exception occurred", cex);
+
+            try {
+                var errorMessage = String.format("%s %s", GameEmoji.WARN, cex.getMessage());
+                replyError(cex.getChatId(), errorMessage);
+
+            } catch (TelegramApiException exx) {
+                log.error("Can't send fallback message to telegram", exx);
             }
 
         } catch (Exception ex) {
@@ -143,8 +129,12 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
 
             if (botSettings.isDebug(chatId)) {
                 try {
-                    var errorMessage = String.format("%s %s", GameEmoji.WARN, ex.getMessage());
-                    replyCommand(chatId, GameCommand.UNKNOWN, errorMessage);
+                    if (chatId != null) {
+                        var errorMessage = String.format("%s %s", GameEmoji.WARN, ex.getMessage());
+                        replyError(chatId, errorMessage);
+                    } else {
+                        log.error("Unknown the update type. " + update);
+                    }
                 } catch (TelegramApiException exx) {
                     log.error("Can't send fallback message to telegram", exx);
                 }
@@ -152,38 +142,39 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
         }
     }
 
-    private void saveGameMessage(Long chatId, Serializable lastMethod) {
-        if (lastMethod instanceof Message msg) {
-            botGame.setLastMessageId(chatId, msg.getMessageId());
-        }
-    }
+    @NotNull
+    private LinkedList<IChatCommand> composeGameCommands(Long chatId) throws TelegramApiException, ChatGameException {
+        var deq = new LinkedList<IChatCommand>();
+        if (botGame.isInProgress(chatId)) {
 
+            if (botSettings.isReplaceMessage(chatId)) {
+                deq.add(GameCommand.DELETE_LAST_MESSAGE);
+            }
 
-    Serializable replyCommand(Long chatId, IGameCommand command, String userMessage) throws TelegramApiException {
-        BotApiMethod<?> commandReply;
+            deq.add(GameCommand.SHOW_TURN_RESULTS);
+        }
 
-        // start new game
-        if (GameCommand.NEW == command) {
-            var complexity = botSettings.getComplexity(chatId);
-            commandReply = command.getReply(() -> botGame.newGame(chatId, complexity));
-        }
-        // make guess turn
-        else if (GameCommand.SHOW_ALL_TURNS_RESULT == command) {
-            commandReply = command.getReply(() -> botGame.makeTurn(chatId, userMessage));
-        }
-        // unknown command || fallback message
-        else if (command.isUnknown()) {
-            commandReply = command.getReply(() ->
-                    Either.right(new ChatGameException(chatId, userMessage)));
-        }
-        // all other known commands
+        // game not started yet or already finished
         else {
-            commandReply = command.getReply(() -> botGame.getChatGame(chatId));
+            deq.add(GameCommand.NEW_GAME_WARN);
         }
-
-        // send message if have any
-        return commandReply == null ? null : telegramClient.execute(commandReply);
+        return deq;
     }
 
-    // TODO do command
+    void handleCommands(Iterator<IChatCommand> commandsIterator, BotApiObject data) throws TelegramApiException, ChatGameException {
+        while (commandsIterator.hasNext()) {
+            IChatCommand command = commandsIterator.next();
+            // game command
+            // message/callback reply
+            // game settings
+            command.execute(data, botGame, botSettings, telegramClient);
+        }
+    }
+
+    void replyError(Long chatId, String errorMessage) throws TelegramApiException {
+        var reply = SendMessage.builder().chatId(chatId)
+                .text(errorMessage)
+                .build();
+        telegramClient.execute(reply);
+    }
 }

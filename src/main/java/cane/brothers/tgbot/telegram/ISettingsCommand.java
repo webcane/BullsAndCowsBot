@@ -9,19 +9,20 @@ import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
-interface IGameCommand extends IChatCommand {
+
+public interface ISettingsCommand extends IChatCommand {
 
     default void execute(BotApiObject data, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
         if (data instanceof Message message) {
-            execute(message, gameService, gameSettings, telegramClient);
-        } else if(data instanceof CallbackQuery callback) {
-            execute(callback, gameService, gameSettings, telegramClient);
+            execute(message, gameService);
+        } else if (data instanceof CallbackQuery callback) {
+            execute(callback, gameService, gameSettings);
         }
     }
 
-    default void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+    default void execute(Message message, ChatGameService gameService) throws ChatGameException {
     }
 
-    default void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+    default void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings) throws ChatGameException {
     }
 }

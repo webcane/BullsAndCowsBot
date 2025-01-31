@@ -3,11 +3,10 @@ package cane.brothers.tgbot.game;
 import cane.brothers.game.GuessComplexityException;
 import cane.brothers.game.GuessTurnException;
 import cane.brothers.game.IGuessTurn;
-import io.jbock.util.Either;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.jdbc.core.mapping.AggregateReference;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedList;
 import java.util.Optional;
@@ -18,18 +17,27 @@ import java.util.Optional;
 class ChatGameSvc implements ChatGameService {
 
     private final ChatGameRepository chatRepo;
-    private final ChatGameSettingsRepository settingsRepo;
+    private final ChatGameSettingsService settingsSvc;
 
     @Override
-    public Either<IChatGame, ChatGameException> getChatGame(Long chatId) {
-        try {
-            // get current chat game
-            var chatGame = getChatGame(chatId, false);
-            return Either.left(convertChatGame(chatGame));
-        } catch (ChatGameException e) {
-            log.error(e.getMessage());
-            return Either.right(e);
-        }
+    @Transactional
+    public IChatGame getChatGame(Long chatId) throws ChatGameException {
+        // get current chat game
+        var chatGame = getChatGame(chatId, false);
+        return convertChatGame(chatGame);
+    }
+
+    @Override
+    public void finishGame(Long chatId) throws ChatGameException {
+        // finish current guess game
+        var chatGame = getChatGame(chatId, false);
+        chatRepo.finishGame(chatGame);
+    }
+
+    @Override
+    public boolean isWin(Long chatId) throws ChatGameException {
+        var guessGame = getChatGame(chatId, false).getCurrentGame();
+        return guessGame != null &&guessGame.isWin();
     }
 
     ChatGame getChatGame(Long chatId, boolean createIfAbsence) throws ChatGameException {
@@ -42,52 +50,36 @@ class ChatGameSvc implements ChatGameService {
     }
 
     @Override
-    public Either<IChatGame, ChatGameException> newGame(Long chatId, int complexity) {
+    @Transactional
+    public IChatGame newGame(Long chatId) throws ChatGameException {
         try {
             // get chat game or create new one
             ChatGame chatGame = getChatGame(chatId, true);
 
-            ChatGuessGameFactory chatFactory = new ChatGuessGameFactory(complexity);
+            ChatGuessGameFactory chatFactory = new ChatGuessGameFactory(settingsSvc.getComplexity(chatId));
             var guessGame = chatFactory.newGuessGame();
 
             chatGame.addNewGame(guessGame);
             chatRepo.startNewGame(chatGame);
 
             chatGame = getChatGame(chatId, false);
+            return convertChatGame(chatGame);
 
-            ChatGameSettings gameSettings = settingsRepo.findByChatGame(chatGame)
-                    .orElse(new ChatGameSettings(complexity, AggregateReference.to(chatGame.getId())));
-
-            // set/update game complexity if necessary
-            if (gameSettings.getComplexity() != complexity) {
-                gameSettings.setComplexity(complexity);
-                settingsRepo.save(gameSettings);
-            }
-
-            return Either.left(convertChatGame(chatGame));
         } catch (GuessComplexityException e) {
-            log.error(e.getMessage());
-            return Either.right(new ChatGameException(chatId, e.getMessage(), e));
-        } catch (ChatGameException e) {
-            log.error(e.getMessage());
-            return Either.right(e);
+            throw new ChatGameException(chatId, e.getMessage(), e);
         }
     }
 
     @Override
-    public boolean isGameInProgress(Long chatId) {
-        try {
-            var guessGame = getChatGame(chatId, false).getCurrentGame();
-            // isGameStarted && !isGameFinished
-            return guessGame != null && !guessGame.isWin();
-        } catch (ChatGameException e) {
-            log.error(e.getMessage());
-            return false;
-        }
+    @Transactional(readOnly = true)
+    public boolean isInProgress(Long chatId) throws ChatGameException {
+        var guessGame = getChatGame(chatId, false).getCurrentGame();
+        return guessGame != null && !guessGame.isWin() && !guessGame.isFinished();
     }
 
     @Override
-    public Either<IChatGame, ChatGameException> makeTurn(Long chatId, String guessMsg) {
+    @Transactional
+    public IChatGame makeTurn(Long chatId, String guessMsg) throws ChatGameException {
         try {
             ChatGame chatGame = getChatGame(chatId, false);
             var guessGame = Optional.ofNullable(chatGame.getCurrentGame()).orElseThrow(
@@ -99,19 +91,15 @@ class ChatGameSvc implements ChatGameService {
             chatGame.addTurn(currentTurn);
             chatRepo.makeTurn(chatGame);
 
-            //return Either.left(convertTurn(currentTurn));
             chatGame = getChatGame(chatId, false);
-            return Either.left(convertChatGame(chatGame));
+            return convertChatGame(chatGame);
         } catch (GuessComplexityException | GuessTurnException e) {
             log.error(e.getMessage());
-            return Either.right(new ChatGameException(chatId, e.getMessage()));
-        } catch (ChatGameException e) {
-            log.error(e.getMessage());
-            return Either.right(e);
+            throw new ChatGameException(chatId, e.getMessage());
         }
     }
 
-    // TODO exctract converters
+    // TODO extract converters
     private IChatGame convertChatGame(ChatGame source) {
         return new IChatGame() {
             @Override
@@ -190,14 +178,17 @@ class ChatGameSvc implements ChatGameService {
     }
 
     @Override
-    public void setLastMessageId(Long chatId, Integer messageId) {
-        try {
-            // update message id
-            var chatGame = getChatGame(chatId, false);
-            chatGame.setLastMessageId(messageId);
-            chatRepo.updateMessageId(chatGame);
-        } catch (Exception ex) {
-            log.error(ex.getMessage());
-        }
+    @Transactional
+    public void setLastMessageId(Long chatId, Integer messageId) throws ChatGameException {
+        // update message id
+        var chatGame = getChatGame(chatId, false);
+        chatGame.setLastMessageId(messageId);
+        chatRepo.updateMessageId(chatGame);
+    }
+
+    @Override
+    public Integer getLastMessageId(Long chatId) throws ChatGameException {
+        var chatGame = getChatGame(chatId, false);
+        return chatGame.getLastMessageId();
     }
 }

@@ -16,6 +16,7 @@ class GuessGame {
     private IGuessNumber secret;
     private int ordinal;
     private SortedSet<GuessTurn> turns = new TreeSet<>(Comparator.comparingInt(GuessTurn::getOrdinal));
+    private boolean finished;
 
     /**
      * Save constructor
@@ -37,12 +38,13 @@ class GuessGame {
      * @param turns      collection of turns
      */
     @PersistenceCreator
-    private GuessGame(UUID gameId, int complexity, IGuessNumber secret, int ordinal, Collection<GuessTurn> turns) {
+    private GuessGame(UUID gameId, int complexity, IGuessNumber secret, int ordinal, Collection<GuessTurn> turns, boolean finished) {
         this.gameId = gameId;
         this.complexity = complexity;
         this.secret = secret;
         this.ordinal = ordinal;
         this.turns.addAll(turns);
+        this.finished = finished;
     }
 
     public GuessTurn getCurrentTurn() {
@@ -53,6 +55,9 @@ class GuessGame {
         var ordinal = getTurns().size();
         newTurn.setOrdinal(++ordinal);
         getTurns().add(newTurn);
+        if (newTurn.isWin()) {
+            finished = true;
+        }
     }
 
     public boolean isWin() {

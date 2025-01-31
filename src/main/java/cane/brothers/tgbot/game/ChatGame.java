@@ -45,6 +45,4 @@ class ChatGame {
     public void addTurn(GuessTurn newTurn) {
         getCurrentGame().addTurn(newTurn);
     }
-
-
 }

@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.JDBCType;
 
@@ -19,7 +18,6 @@ class ChatGameAggregateRepositoryImpl implements ChatGameAggregateRepository {
     private final GuessNumberSQLType guessSqlType = new GuessNumberSQLType();
 
 
-    @Transactional
     @Override
     public void startNewGame(ChatGame chat) {
         var currentGame = chat.getCurrentGame();
@@ -40,7 +38,22 @@ class ChatGameAggregateRepositoryImpl implements ChatGameAggregateRepository {
         }
     }
 
-    @Transactional
+    @Override
+    public void finishGame(ChatGame chat) {
+        MapSqlParameterSource insertParams = new MapSqlParameterSource();
+        insertParams.addValue("chat_game", chat.getId(), JDBCType.OTHER.getVendorTypeNumber());
+        template.update("UPDATE guess_game SET finished = TRUE WHERE chat_game = :chat_game", insertParams);
+
+        MapSqlParameterSource updateParams = new MapSqlParameterSource();
+        updateParams.addValue("id", chat.getId(), JDBCType.OTHER.getVendorTypeNumber());
+        updateParams.addValue("version", chat.getVersion(), JDBCType.INTEGER.getVendorTypeNumber());
+        final int updateCount = template.update("UPDATE chat_game SET version = :version + 1 WHERE id = :id AND version = :version", updateParams);
+        if (updateCount != 1) {
+            var msg = String.format("chat game %d was changed before a guess game was finished", chat.getChatId());
+            throw new OptimisticLockingFailureException(msg);
+        }
+    }
+
     @Override
     public void makeTurn(ChatGame chat) {
         var currentGame = chat.getCurrentGame();
@@ -64,7 +77,6 @@ class ChatGameAggregateRepositoryImpl implements ChatGameAggregateRepository {
         }
     }
 
-    @Transactional
     @Override
     public void updateMessageId(ChatGame chat) {
         MapSqlParameterSource updateParams = new MapSqlParameterSource();
