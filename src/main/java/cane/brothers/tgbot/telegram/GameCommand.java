@@ -10,16 +10,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
-import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 @Slf4j
-enum GameCommand implements IGameCommand {
+enum GameCommand implements IChatCommand<Message> {
     SCORE {
         @Override
-        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) {
             // TODO score
             log.info("show score");
         }
@@ -39,6 +38,11 @@ enum GameCommand implements IGameCommand {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
+
+            if (gameSettings.isReplaceMessage(chatId)) {
+                GameCommand.DELETE_LAST_MESSAGE.execute(message, gameService, gameSettings, telegramClient);
+            }
+
             var chatGame = gameService.makeTurn(chatId, message.getText());
 
             var reply = SendMessage.builder().chatId(chatGame.getChatId())
@@ -52,11 +56,10 @@ enum GameCommand implements IGameCommand {
             if (gameService.isWin(chatId)) {
                 GameCommand.SHOW_WIN_RESULT.execute(message, gameService, gameSettings, telegramClient);
                 GameCommand.SHOW_WIN_MESSAGE.execute(message, gameService, gameSettings, telegramClient);
+
+                // remove last message id
+                gameService.setLastMessageId(chatId, null);
             }
-
-            // remove last message id
-            gameService.setLastMessageId(chatId, null);
-
         }
 
         public String displayEmojiResult(IChatGame chatGame, boolean showAllTurns) {
@@ -171,28 +174,7 @@ enum GameCommand implements IGameCommand {
             }
 
         }
-    },
-    CALLBACK_NEW_GAME_WARN {
-        @Override
-        public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
-            var chatId = callbackQuery.getMessage().getChatId();
-            var reply = SendMessage.builder().chatId(chatId)
-                    .text("Please, start another game using /new command").build();
-
-            var lastMethod = telegramClient.execute(reply);
-            gameService.setLastMessageId(chatId, lastMethod.getMessageId());
-        }
     };
-
-//    UNKNOWN {
-//        @Override
-//        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
-//            var reply = SendMessage.builder().chatId(message.getChatId())
-//                    .text("Unknown game command")
-//                    .build();
-//            telegramClient.execute(reply);
-//        }
-//    };
 
     @Override
     public String toString() {

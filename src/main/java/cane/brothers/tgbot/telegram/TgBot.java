@@ -7,22 +7,16 @@ import cane.brothers.tgbot.game.ChatGameService;
 import cane.brothers.tgbot.game.ChatGameSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.longpolling.BotSession;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
 import org.telegram.telegrambots.longpolling.starter.AfterBotRegistration;
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
-import org.telegram.telegrambots.meta.api.interfaces.BotApiObject;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
-
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.LinkedList;
 
 @Slf4j
 @Component
@@ -54,31 +48,26 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
         Long chatId = null;
 
         try {
-            Deque<IChatCommand> commands = new LinkedList<>();
-            BotApiObject data;
-
             // message
             if (update.hasMessage()) {
                 chatId = update.getMessage().getChatId();
 
                 var userMessage = update.getMessage();
                 var userText = userMessage.getText();
-                data = userMessage;
 
                 // registered command
                 if (update.getMessage().isCommand()) {
-                    ICommandComposer chatCmd = ChatCommandComposer.fromString(userText);
-                    if (chatCmd.isUnknown()) {
-                        throw new ChatGameException(chatId, "Unrecognized message command: " + userText);
-                    }
-
-                    commands = chatCmd.getCommands();
+                    var command = ChatCommandFactory.create(userText);
+                    command.execute(userMessage, botGame, botSettings, telegramClient);
                 }
 
                 // game message
                 else if (update.getMessage().hasText()) {
-                    // compose game commands
-                    commands = composeGameCommands(chatId);
+                    if (botGame.isInProgress(chatId)) {
+                        GameCommand.SHOW_TURN_RESULTS.execute(userMessage, botGame, botSettings, telegramClient);
+                    } else {
+                        GameCommand.NEW_GAME_WARN.execute(userMessage, botGame, botSettings, telegramClient);
+                    }
                 }
             }
 
@@ -87,18 +76,10 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
                 var callbackQuery = update.getCallbackQuery();
                 chatId = callbackQuery.getMessage().getChatId();
                 var callbackData = callbackQuery.getData();
-                data = callbackQuery;
 
-                ICommandComposer chatCmd = ChatCommandComposer.fromString(callbackData);
-                commands = chatCmd.getCommands();
+                var command = ChatCallbackCommandFactory.create(callbackData);
+                command.execute(callbackQuery, botGame, botSettings, telegramClient);
             }
-
-            // unknown
-            else {
-                data = null;
-            }
-
-            handleCommands(commands.iterator(), data);
 
         } catch (TelegramApiException tex) {
             log.error("Can't send message to telegram", tex);
@@ -139,35 +120,6 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
                     log.error("Can't send fallback message to telegram", exx);
                 }
             }
-        }
-    }
-
-    @NotNull
-    private LinkedList<IChatCommand> composeGameCommands(Long chatId) throws TelegramApiException, ChatGameException {
-        var deq = new LinkedList<IChatCommand>();
-        if (botGame.isInProgress(chatId)) {
-
-            if (botSettings.isReplaceMessage(chatId)) {
-                deq.add(GameCommand.DELETE_LAST_MESSAGE);
-            }
-
-            deq.add(GameCommand.SHOW_TURN_RESULTS);
-        }
-
-        // game not started yet or already finished
-        else {
-            deq.add(GameCommand.NEW_GAME_WARN);
-        }
-        return deq;
-    }
-
-    void handleCommands(Iterator<IChatCommand> commandsIterator, BotApiObject data) throws TelegramApiException, ChatGameException {
-        while (commandsIterator.hasNext()) {
-            IChatCommand command = commandsIterator.next();
-            // game command
-            // message/callback reply
-            // game settings
-            command.execute(data, botGame, botSettings, telegramClient);
         }
     }
 
