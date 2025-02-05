@@ -19,7 +19,7 @@ enum CallbackGameCommand implements IChatCommand<CallbackQuery> {
                     .text("Please, start another game using /new command").build();
 
             var lastMethod = telegramClient.execute(reply);
-            gameService.setLastMessageId(chatId, lastMethod.getMessageId());
+            GameCommand.SAVE_LAST_MESSAGE.execute(lastMethod, gameService, gameSettings, telegramClient);
         }
     };
 

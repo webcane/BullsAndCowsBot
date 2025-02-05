@@ -50,7 +50,7 @@ enum GameCommand implements IChatCommand<Message> {
                     .build();
 
             var lastMethod = telegramClient.execute(reply);
-            gameService.setLastMessageId(chatId, lastMethod.getMessageId());
+            GameCommand.SAVE_LAST_MESSAGE.execute(lastMethod, gameService, gameSettings, telegramClient);
 
             // show win
             if (gameService.isWin(chatId)) {
@@ -157,7 +157,7 @@ enum GameCommand implements IChatCommand<Message> {
                     .text("Please, start another game using /new command").build();
 
             var lastMethod = telegramClient.execute(reply);
-            gameService.setLastMessageId(chatId, lastMethod.getMessageId());
+            SAVE_LAST_MESSAGE.execute(lastMethod, gameService, gameSettings, telegramClient);
         }
     },
 
@@ -172,7 +172,17 @@ enum GameCommand implements IChatCommand<Message> {
                         .build();
                 telegramClient.execute(reply);
             }
+        }
+    },
 
+    SAVE_LAST_MESSAGE {
+        @Override
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            var chatId = message.getChatId();
+
+            if (gameService.isInProgress(chatId)) {
+                gameService.setLastMessageId(chatId, message.getMessageId());
+            }
         }
     };
 
