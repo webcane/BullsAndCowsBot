@@ -15,6 +15,4 @@ public interface ChatGameService {
     IChatGame makeTurn(Long chatId, String guessMsg) throws ChatGameException;
 
     void setLastMessageId(Long chatId, Integer messageId) throws ChatGameException;
-
-    Integer getLastMessageId(Long chatId) throws ChatGameException;
 }

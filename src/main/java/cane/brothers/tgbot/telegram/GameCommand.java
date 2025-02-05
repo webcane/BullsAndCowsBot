@@ -28,7 +28,7 @@ enum GameCommand implements IChatCommand<Message> {
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
             var chatGame = gameService.newGame(chatId);
-            var reply = SendMessage.builder().chatId(chatGame.getChatId())
+            var reply = SendMessage.builder().chatId(chatId)
                     .text(String.format("Enter a %d digit number", chatGame.getComplexity())).build();
             telegramClient.execute(reply);
         }
@@ -45,7 +45,7 @@ enum GameCommand implements IChatCommand<Message> {
 
             var chatGame = gameService.makeTurn(chatId, message.getText());
 
-            var reply = SendMessage.builder().chatId(chatGame.getChatId())
+            var reply = SendMessage.builder().chatId(chatId)
                     .text(displayEmojiResult(chatGame, gameSettings.isShowAllTurns(chatId)))
                     .build();
 
@@ -105,7 +105,7 @@ enum GameCommand implements IChatCommand<Message> {
             var chatId = message.getChatId();
             var chatGame = gameService.getChatGame(chatId);
 
-            var reply = SendMessage.builder().chatId(chatGame.getChatId())
+            var reply = SendMessage.builder().chatId(chatId)
                     .text(displayEmojiResult(chatGame)).build();
             telegramClient.execute(reply);
         }
@@ -125,7 +125,7 @@ enum GameCommand implements IChatCommand<Message> {
             var chatId = message.getChatId();
             var chatGame = gameService.getChatGame(chatId);
 
-            var reply = SendMessage.builder().chatId(chatGame.getChatId())
+            var reply = SendMessage.builder().chatId(chatId)
                     .text(displayEmojiResult(chatGame)).build();
             telegramClient.execute(reply);
         }
@@ -165,7 +165,7 @@ enum GameCommand implements IChatCommand<Message> {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
-            var messageId = gameService.getLastMessageId(chatId);
+            var messageId = gameService.getChatGame(chatId).getLastMessageId();
             if (messageId != null) {
                 var reply = DeleteMessage.builder().chatId(chatId)
                         .messageId(messageId)

@@ -185,10 +185,4 @@ class ChatGameSvc implements ChatGameService {
         chatGame.setLastMessageId(messageId);
         chatRepo.updateMessageId(chatGame);
     }
-
-    @Override
-    public Integer getLastMessageId(Long chatId) throws ChatGameException {
-        var chatGame = getChatGame(chatId, false);
-        return chatGame.getLastMessageId();
-    }
 }
