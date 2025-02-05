@@ -120,7 +120,6 @@ enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
     CALLBACK_HIDE_SETTINGS {
         @Override
         public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
-            // TODO
             CallbackReplyCommand.CALLBACK_ANSWER.execute(callbackQuery, gameService, gameSettings, telegramClient);
 
             var reply = DeleteMessage.builder().chatId(callbackQuery.getMessage().getChatId())
