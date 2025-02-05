@@ -12,7 +12,6 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 @Configuration
 class TgBotConfig {
 
-
     @Bean
     public TelegramClient telegramClient(OkHttpClient okClient, AppProperties properties) {
         return new OkHttpTelegramClient(okClient, properties.token());

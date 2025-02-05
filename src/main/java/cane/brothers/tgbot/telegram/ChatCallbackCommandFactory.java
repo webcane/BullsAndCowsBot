@@ -12,7 +12,7 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import java.util.Arrays;
 
 @Slf4j
-public enum ChatCallbackCommandFactory {
+enum ChatCallbackCommandFactory {
     COMPLEXITY {
         @Override
         public IChatCommand<CallbackQuery> getCommand() {

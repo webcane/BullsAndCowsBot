@@ -12,7 +12,7 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import java.util.Arrays;
 
 @Slf4j
-public enum ChatCommandFactory {
+enum ChatCommandFactory {
 
     NEW {
         @Override
