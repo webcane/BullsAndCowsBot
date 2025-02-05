@@ -2,13 +2,13 @@ package cane.brothers.tgbot.game;
 
 public interface ChatGameService {
 
-    boolean isInProgress(Long chatId) throws ChatGameException;
+    boolean isInProgress(Long chatId);
+
+    boolean isWin(Long chatId);
 
     IChatGame getChatGame(Long chatId) throws ChatGameException;
 
     void finishGame(Long chatId) throws ChatGameException;
-
-    boolean isWin(Long chatId) throws ChatGameException;
 
     IChatGame newGame(Long chatId) throws ChatGameException;
 

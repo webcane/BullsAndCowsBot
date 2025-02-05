@@ -20,6 +20,28 @@ class ChatGameSvc implements ChatGameService {
     private final ConversionService conversionSvc;
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean isInProgress(Long chatId) {
+        try {
+            var guessGame = getChatGame(chatId, false).getCurrentGame();
+            return guessGame != null && !guessGame.isWin() && !guessGame.isFinished();
+        } catch (ChatGameException ex) {
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isWin(Long chatId) {
+        try {
+            var guessGame = getChatGame(chatId, false).getCurrentGame();
+            return guessGame != null && guessGame.isWin();
+        } catch (ChatGameException ex) {
+            return false;
+        }
+    }
+
+    @Override
     @Transactional
     public IChatGame getChatGame(Long chatId) throws ChatGameException {
         // get current chat game
@@ -28,16 +50,11 @@ class ChatGameSvc implements ChatGameService {
     }
 
     @Override
+    @Transactional
     public void finishGame(Long chatId) throws ChatGameException {
         // finish current guess game
         var chatGame = getChatGame(chatId, false);
         chatRepo.finishGame(chatGame);
-    }
-
-    @Override
-    public boolean isWin(Long chatId) throws ChatGameException {
-        var guessGame = getChatGame(chatId, false).getCurrentGame();
-        return guessGame != null && guessGame.isWin();
     }
 
     ChatGame getChatGame(Long chatId, boolean createIfAbsence) throws ChatGameException {
@@ -68,13 +85,6 @@ class ChatGameSvc implements ChatGameService {
         } catch (GuessComplexityException e) {
             throw new ChatGameException(chatId, e.getMessage(), e);
         }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isInProgress(Long chatId) throws ChatGameException {
-        var guessGame = getChatGame(chatId, false).getCurrentGame();
-        return guessGame != null && !guessGame.isWin() && !guessGame.isFinished();
     }
 
     @Override
