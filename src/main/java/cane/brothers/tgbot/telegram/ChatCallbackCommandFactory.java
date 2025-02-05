@@ -1,13 +1,8 @@
 package cane.brothers.tgbot.telegram;
 
-import cane.brothers.tgbot.game.ChatGameException;
-import cane.brothers.tgbot.game.ChatGameService;
-import cane.brothers.tgbot.game.ChatGameSettingsService;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.util.Arrays;
 
@@ -52,20 +47,16 @@ enum ChatCallbackCommandFactory {
     UNKNOWN {
         @Override
         public IChatCommand<CallbackQuery> getCommand() {
-            return new IChatCommand<>() {
-                @Override
-                public void execute(CallbackQuery callback, ChatGameService gameService, ChatGameSettingsService
-                        gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
-                    var chatId = callback.getMessage().getChatId();
-                    var warn = String.format("Unknown callback command: %s", callback.getData());
-                    log.warn(warn);
+            return (callback, gameService, gameSettings, telegramClient) -> {
+                var chatId = callback.getMessage().getChatId();
+                var warn = String.format("Unknown callback command: %s", callback.getData());
+                log.warn(warn);
 
-                    if (gameSettings.isDebug(chatId)) {
-                        var reply = SendMessage.builder().chatId(chatId)
-                                .text(warn).build();
-                        var lastMethod = telegramClient.execute(reply);
-                        gameService.setLastMessageId(chatId, lastMethod.getMessageId());
-                    }
+                if (gameSettings.isDebug(chatId)) {
+                    var reply = SendMessage.builder().chatId(chatId)
+                            .text(warn).build();
+                    var lastMethod = telegramClient.execute(reply);
+                    gameService.setLastMessageId(chatId, lastMethod.getMessageId());
                 }
             };
         }
