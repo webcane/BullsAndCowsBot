@@ -81,8 +81,7 @@ enum GameCommand implements IChatCommand<Message> {
             } else {
                 // SHOW_LAST_TURN_RESULT
                 var gameTurn = chatGame.getCurrentGame().getTurns().getLast();
-                return getTurnLine(gameTurn) + "\n"
-                        + (gameTurn.isWin() ? GameEmoji.HIT : "");
+                return getTurnLine(gameTurn) + "\n";
             }
         }
 
