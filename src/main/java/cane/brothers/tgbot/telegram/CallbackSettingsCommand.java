@@ -29,7 +29,10 @@ enum CallbackSettingsCommand implements IChatCommand<CallbackQuery> {
             }
             CallbackReplyCommand.CALLBACK_HIDE_SETTINGS.execute(callbackQuery, gameService, gameSettings, telegramClient);
             CallbackReplyCommand.CALLBACK_SETTINGS_UPDATED.execute(callbackQuery, gameService, gameSettings, telegramClient);
-            CallbackGameCommand.CALLBACK_NEW_GAME_WARN.execute(callbackQuery, gameService, gameSettings, telegramClient);
+
+            if (gameService.isInProgress(chatId)) {
+                CallbackGameCommand.CALLBACK_NEW_GAME_WARN.execute(callbackQuery, gameService, gameSettings, telegramClient);
+            }
         }
     },
     CALLBACK_FINISH_GAME {
