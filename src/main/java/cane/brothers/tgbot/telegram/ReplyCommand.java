@@ -19,11 +19,10 @@ enum ReplyCommand implements IChatCommand<Message>, Utils {
     INFO {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException {
-
             var chatId = message.getChatId();
             var reply = SendMessage.builder().chatId(chatId)
                     .parseMode(ParseMode.MARKDOWNV2)
-                    .text(escape(readMarkDownFile("rules.md")))
+                    .text(escape(readMarkDownFile("rules.tg.md")))
                     .build();
             telegramClient.execute(reply);
         }
