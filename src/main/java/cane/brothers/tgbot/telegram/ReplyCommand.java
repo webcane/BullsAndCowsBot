@@ -3,6 +3,7 @@ package cane.brothers.tgbot.telegram;
 import cane.brothers.tgbot.game.ChatGameService;
 import cane.brothers.tgbot.game.ChatGameSettingsService;
 import lombok.extern.slf4j.Slf4j;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -14,15 +15,21 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import java.util.List;
 
 @Slf4j
-enum ReplyCommand implements IChatCommand<Message> {
+enum ReplyCommand implements IChatCommand<Message>, Utils {
     INFO {
         @Override
-        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) {
-            log.info("show info");
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException {
+
+            var chatId = message.getChatId();
+            var reply = SendMessage.builder().chatId(chatId)
+                    .parseMode(ParseMode.MARKDOWNV2)
+                    .text(escape(readMarkDownFile("rules.md")))
+                    .build();
+            telegramClient.execute(reply);
         }
     },
     SETTINGS {
-        // replace_message - замещать последнее сообщение
+        // replace_message замещать последнее сообщение
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException {
             var chatId = message.getChatId();
