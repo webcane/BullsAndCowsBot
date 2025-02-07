@@ -1,37 +1,36 @@
-* Правила Bulls @ Cows *
+*Bulls @ Cows*
 
-* Цель игры *
-Угадать загаданное число, за минимальное количество попыток
+*Task*
+Predict the secret number in the fewest attempts possible
 
-* Загадывание числа *
-Бот загадывает число, состоящее из уникальных цифр
-Цифры в числе не повторяются
-Длинна секрета от 1 до 6 символов. По умолчанию 4
-Сложность игры можно изменить в настройках `/settings`
+*Preparation*
+A new game begins with guessing a digit secret number
+The digits must be all different
+The secret can be from 1 to 6 digits long. The default is 4
+The game's difficulty can be changed in the settings `/settings`
 
-* Ход игры *
-Игрок вводит число, делая предположение
-В ответ на предположение игрок получает результаты хода в виде _быков_ и _коров_
-_Бык_ — цифра совпадает по позиции
-_Корова_ — цифра есть в загаданном числе, но нахожится в другой позиции
+*Gameplay*
+The player try to guess the secret number by trial and error
+The guess response gives the number of matches
+A _bull_ means a digit matches in both value and position
+A _cow_ means a digit is in the secret number but in a different position
 
-* Цель *
-Отгадать всех _быков_. Это будет означать, что загаданное число угадано верно
+*Goal*
+Guess all the _bulls_ correctly
 
-* Завершение игры *
-Игра продолжается до тех пор, пока игрок не угадает загаданное число
-При этом количество _быков_ будет совпадать с длиной загаданного числа
+*End of the Game*
+The game continues until the player reveal the secret number
 
-* Пример игры *
-||Загаданное число: 235. Сложность 3||
->Предположение игрока: 1
->Неверный ход: В предположении должно быть ровно 3 цифры
->Предположение игрока: 111
->Неверный ход: Загаданное число состоит из неповторяющихсф цифр
->Предположение игрока: 123
->0 быков, 2 коровы
->Предположение игрока: 234
->2 быка, 0 коров
->Предположение игрока: 235
->3 быка, 0 коров
->Победа!!! Загаданное число 235. Угадали верно за 3 хода
+*Example*
+||Secret number: 235. Difficulty: 3||
+>Player's try: 1
+>Invalid move: The guess must contain exactly 3 digits
+>Player's try: 111
+>Invalid move: The secret number consists of unique digits
+>Player's try: 123
+>0 bulls, 2 cows
+>Player's try: 234
+>2 bulls, 0 cows
+>Player's try: 235
+>3 bulls, 0 cows
+>Victory!!! The secret number is 235. Correctly guessed in 3 turns.

@@ -5,11 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.stereotype.Component;
 
 import java.util.LinkedList;
 
-@Component
 @RequiredArgsConstructor
 class GuessGameConverter implements Converter<GuessGame, IGuessGame> {
 
@@ -23,6 +21,11 @@ class GuessGameConverter implements Converter<GuessGame, IGuessGame> {
             @Override
             public boolean isWin() {
                 return source.isWin();
+            }
+
+            @Override
+            public int getOrdinal() {
+                return source.getOrdinal();
             }
 
             @Override

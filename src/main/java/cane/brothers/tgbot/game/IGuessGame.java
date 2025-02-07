@@ -8,5 +8,7 @@ public interface IGuessGame {
 
     boolean isWin();
 
+    int getOrdinal();
+
     LinkedList<IGuessTurn> getTurns();
 }

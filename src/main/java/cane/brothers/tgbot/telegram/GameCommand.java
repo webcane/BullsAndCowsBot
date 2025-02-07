@@ -2,25 +2,37 @@ package cane.brothers.tgbot.telegram;
 
 import cane.brothers.game.IGuessTurn;
 import cane.brothers.tgbot.emoji.GameEmoji;
-import cane.brothers.tgbot.game.ChatGameException;
-import cane.brothers.tgbot.game.ChatGameService;
-import cane.brothers.tgbot.game.ChatGameSettingsService;
-import cane.brothers.tgbot.game.IChatGame;
+import cane.brothers.tgbot.game.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
+import java.util.Comparator;
+
 @Slf4j
 enum GameCommand implements IChatCommand<Message> {
     SCORE {
         @Override
-        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) {
-            // TODO score
-            log.info("show score");
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws ChatGameException, TelegramApiException {
+            var chatId = message.getChatId();
+            var allGames = gameService.getAllGames(chatId);
+            var gamesNumber = allGames.size();
+            var minTurns = allGames.stream()
+                    .filter(IGuessGame::isWin)
+                    .map(gg -> gg.getTurns().size())
+                    .min(Comparator.comparingInt(gg -> gg))
+                    .orElse(0);
+            var gamesWin = allGames.stream().filter(IGuessGame::isWin).count();
+            var reply = SendMessage.builder().chatId(chatId)
+                    .parseMode(ParseMode.MARKDOWNV2)
+                    .text(String.format("*Game Score*\n\nNumber of wins: *%d*\nNumber of games played: *%d*\nMinimum number of turns: *%d*",
+                            gamesWin, gamesNumber, minTurns)).build();
+            telegramClient.execute(reply);
         }
     },
     NEW {

@@ -1,5 +1,7 @@
 package cane.brothers.tgbot.game;
 
+import java.util.SortedSet;
+
 public interface ChatGameService {
 
     boolean isInProgress(Long chatId);
@@ -15,4 +17,6 @@ public interface ChatGameService {
     IChatGame makeTurn(Long chatId, String guessMsg) throws ChatGameException;
 
     void setLastMessageId(Long chatId, Integer messageId) throws ChatGameException;
+
+    SortedSet<IGuessGame> getAllGames(Long chatId) throws ChatGameException;
 }

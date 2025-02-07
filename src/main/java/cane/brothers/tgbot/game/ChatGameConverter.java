@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.stereotype.Component;
 
-@Component
 @RequiredArgsConstructor
 class ChatGameConverter implements Converter<ChatGame, IChatGame> {
 

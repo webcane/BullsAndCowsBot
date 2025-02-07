@@ -4,11 +4,13 @@ import cane.brothers.game.GuessComplexityException;
 import cane.brothers.game.GuessTurnException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -17,7 +19,7 @@ class ChatGameSvc implements ChatGameService {
 
     private final ChatGameRepository chatRepo;
     private final ChatGameSettingsService settingsSvc;
-    private final ConversionService conversionSvc;
+    private final @Lazy ConversionService conversionSvc;
 
     @Override
     @Transactional(readOnly = true)
@@ -42,7 +44,7 @@ class ChatGameSvc implements ChatGameService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public IChatGame getChatGame(Long chatId) throws ChatGameException {
         // get current chat game
         var chatGame = getChatGame(chatId, false);
@@ -117,5 +119,14 @@ class ChatGameSvc implements ChatGameService {
         var chatGame = getChatGame(chatId, false);
         chatGame.setLastMessageId(messageId);
         chatRepo.updateMessageId(chatGame);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SortedSet<IGuessGame> getAllGames(Long chatId) throws ChatGameException {
+        var chatGame = getChatGame(chatId, false);
+        return chatGame.getAllGames().stream()
+                .map(gg -> conversionSvc.convert(gg, IGuessGame.class))
+                .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparingInt(IGuessGame::getOrdinal))));
     }
 }

@@ -3,9 +3,7 @@ package cane.brothers.tgbot.game;
 import cane.brothers.game.IGuessTurn;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.stereotype.Component;
 
-@Component
 class GuessTurnConverter implements Converter<GuessTurn, IGuessTurn> {
     @NotNull
     @Override
