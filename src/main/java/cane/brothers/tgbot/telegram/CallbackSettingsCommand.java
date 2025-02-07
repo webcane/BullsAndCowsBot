@@ -18,10 +18,10 @@ enum CallbackSettingsCommand implements IChatCommand<CallbackQuery> {
 
             if (msg.length > 1) {
                 var complexity = Integer.valueOf(msg[1]);
-                log.info("set default game complexity to: " + complexity);
+                log.info("Set default game complexity to: " + complexity);
                 gameSettings.setComplexity(chatId, complexity);
             } else {
-                log.info("unknown settings: " + callbackQuery.getData());
+                log.info("Unknown settings: " + callbackQuery.getData());
             }
 
             if (gameService.isInProgress(chatId)) {

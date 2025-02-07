@@ -39,16 +39,16 @@ enum ReplyCommand implements IChatCommand<Message>, Utils {
         }
 
         InlineKeyboardMarkup getSettingsKeyboardMarkup() {
-            var complexityButton = InlineKeyboardButton.builder().text("Complexity")
+            var complexityButton = InlineKeyboardButton.builder().text("Change complexity")
                     .callbackData(ChatCallbackCommandFactory.MENU_COMPLEXITY.toString()).build();
 
-            var resultsButton = InlineKeyboardButton.builder().text("Results")
+            var resultsButton = InlineKeyboardButton.builder().text("Show all results")
                     .callbackData(ChatCallbackCommandFactory.MENU_REPLACE_MESSAGE.toString()).build();
 
-            var turnsButton = InlineKeyboardButton.builder().text("Turns")
+            var turnsButton = InlineKeyboardButton.builder().text("Show all turns")
                     .callbackData(ChatCallbackCommandFactory.MENU_SHOW_TURNS.toString()).build();
 
-            var hideButton = InlineKeyboardButton.builder().text("Hide")
+            var hideButton = InlineKeyboardButton.builder().text("Hide settings")
                     .callbackData(ChatCallbackCommandFactory.MENU_HIDE_SETTINGS.toString()).build();
 
             return InlineKeyboardMarkup.builder()

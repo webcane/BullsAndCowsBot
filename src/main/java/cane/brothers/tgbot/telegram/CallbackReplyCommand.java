@@ -5,6 +5,7 @@ import cane.brothers.tgbot.game.ChatGameService;
 import cane.brothers.tgbot.game.ChatGameSettingsService;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
@@ -43,9 +44,9 @@ enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
         @Override
         public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var reply = EditMessageText.builder().chatId(callbackQuery.getMessage().getChatId())
-                    .parseMode("HTML")
+                    .parseMode(ParseMode.MARKDOWNV2)
                     .messageId(callbackQuery.getMessage().getMessageId())
-                    .text("Choose game <i>complexity</i>:")
+                    .text("Choose game _complexity_:")
                     .build();
             telegramClient.execute(reply);
         }
@@ -82,16 +83,16 @@ enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
         }
 
         InlineKeyboardMarkup getSettingsKeyboardMarkup() {
-            var complexityButton = InlineKeyboardButton.builder().text("Complexity")
+            var complexityButton = InlineKeyboardButton.builder().text("Change complexity")
                     .callbackData(ChatCallbackCommandFactory.MENU_COMPLEXITY.toString()).build();
 
-            var resultsButton = InlineKeyboardButton.builder().text("Results")
+            var resultsButton = InlineKeyboardButton.builder().text("Show all results")
                     .callbackData(ChatCallbackCommandFactory.MENU_REPLACE_MESSAGE.toString()).build();
 
-            var turnsButton = InlineKeyboardButton.builder().text("Turns")
+            var turnsButton = InlineKeyboardButton.builder().text("Show all turns")
                     .callbackData(ChatCallbackCommandFactory.MENU_SHOW_TURNS.toString()).build();
 
-            var hideButton = InlineKeyboardButton.builder().text("Hide")
+            var hideButton = InlineKeyboardButton.builder().text("Hide settings")
                     .callbackData(ChatCallbackCommandFactory.MENU_HIDE_SETTINGS.toString()).build();
 
             return InlineKeyboardMarkup.builder()

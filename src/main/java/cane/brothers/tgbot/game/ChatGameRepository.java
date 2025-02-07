@@ -11,5 +11,4 @@ import java.util.UUID;
 interface ChatGameRepository extends CrudRepository<ChatGame, UUID>, ChatGameAggregateRepository {
 
     Optional<ChatGame> findByChatId(@Param("chat_id") Long chatId);
-
 }
