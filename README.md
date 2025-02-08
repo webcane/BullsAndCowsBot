@@ -5,6 +5,7 @@ Telegram bot to play  [Bulls&amp;Cows](https://en.wikipedia.org/wiki/Bulls_and_c
 Required environmental variables:
 ```dotenv
 TGBOT_TOKEN=
+SERVER_PORT=
 DB_NAME=
 DB_HOST=
 SPRING_DATASOURCE_PASSWORD=
@@ -68,7 +69,8 @@ chmod +x hooks/post-receive
 ```
 add permissions for www
 ```bash
-chown -R <VM_USER>:<VM_USER> /var/www/tgbot-bac
+sudo mkdir /var/www/tgbot-bac
+sudo chown -R <VM_USER>:<VM_USER> /var/www/tgbot-bac
 ```
 
 

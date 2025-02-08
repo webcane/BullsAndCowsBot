@@ -115,7 +115,8 @@ enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
         public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var reply = EditMessageText.builder().chatId(callbackQuery.getMessage().getChatId())
                     .messageId(callbackQuery.getMessage().getMessageId())
-                    .text("Bulls & Cows settings:")
+                    .parseMode(ParseMode.MARKDOWNV2)
+                    .text("*Bulls & Cows* settings:")
                     .build();
             telegramClient.execute(reply);
         }

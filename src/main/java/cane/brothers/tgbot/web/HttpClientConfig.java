@@ -23,19 +23,24 @@ public class HttpClientConfig {
 
     @Bean
     Supplier<Proxy> proxySupplier(AppProperties properties) {
-        return () -> new Proxy(Proxy.Type.HTTP, new InetSocketAddress(properties.proxy().hostname(), properties.proxy().port()));
+        return properties.proxy() == null ?
+                () -> null :
+                () -> new Proxy(Proxy.Type.HTTP, new InetSocketAddress(properties.proxy().hostname(),
+                                properties.proxy().port() == null ? 0 : properties.proxy().port()));
     }
 
     @Bean
     Supplier<okhttp3.Authenticator> authenticatorSupplier(AppProperties properties) {
-        return () -> (route, response) -> {
-            String credential = Credentials.basic(properties.proxy().username(), properties.proxy().password());
-            return response
-                    .request()
-                    .newBuilder()
-                    .header(HttpHeaders.PROXY_AUTHORIZATION, credential)
-                    .build();
-        };
+        return properties.proxy() == null ?
+                () -> null :
+                () -> (route, response) -> {
+                    String credential = Credentials.basic(properties.proxy().username(), properties.proxy().password());
+                    return response
+                            .request()
+                            .newBuilder()
+                            .header(HttpHeaders.PROXY_AUTHORIZATION, credential)
+                            .build();
+                };
     }
 
     @Bean

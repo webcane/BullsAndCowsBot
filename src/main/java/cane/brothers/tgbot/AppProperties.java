@@ -11,10 +11,6 @@ public record AppProperties(
         String token,
         HttpProxy proxy) {
 
-    public record HttpProxy(
-            @NotNull(message = "The property 'tgbot.proxy.hostname' is required")
-            String hostname,
-            @NotNull(message = "The property 'tgbot.proxy.port' is required")
-            int port, String username, String password) {
+    public record HttpProxy(String hostname, Integer port, String username, String password) {
     }
 }
