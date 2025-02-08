@@ -53,5 +53,7 @@ services:
       - DB_HOST=db
     ports:
       - "$SERVER_PORT:$SERVER_PORT"
-    command: java -Dhttp.proxyHost=$TGBOT_PROXY_HOSTNAME -Dhttp.proxyPort=$TGBOT_PROXY_PORT -Dhttps.proxyUser=$TGBOT_PROXY_USERNAME -Dhttps.proxyPassword=$TGBOT_PROXY_PASSWORD -jar build/libs/app.jar
+#      - "$TGBOT_PROXY_PORT:$TGBOT_PROXY_PORT"
+#    command: java -Dhttp.proxyHost=$TGBOT_PROXY_HOSTNAME -Dhttp.proxyPort=$TGBOT_PROXY_PORT -Dhttps.proxyUser=$TGBOT_PROXY_USERNAME -Dhttps.proxyPassword=$TGBOT_PROXY_PASSWORD -jar build/libs/app.jar
+    command: java -jar build/libs/app.jar
     restart: always
