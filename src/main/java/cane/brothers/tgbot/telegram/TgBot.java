@@ -81,6 +81,10 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
                 command.execute(callbackQuery, botGame, botSettings, telegramClient);
             }
 
+            else {
+                log.warn("Unknown update. id %d".formatted(update.getUpdateId()));
+            }
+
         } catch (TelegramApiException tex) {
             log.error("Can't send message to telegram", tex);
             try {
@@ -95,7 +99,7 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
             }
 
         } catch (ChatGameException cex) {
-            log.error("Game exception occurred", cex);
+            log.error("Game exception occurred for chat %d".formatted(cex.getChatId()), cex);
 
             try {
                 var errorMessage = String.format("%s %s", GameEmoji.WARN, cex.getMessage());

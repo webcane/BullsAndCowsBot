@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
@@ -20,6 +21,8 @@ enum GameCommand implements IChatCommand<Message> {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws ChatGameException, TelegramApiException {
             var chatId = message.getChatId();
+            log.debug("Show score for chat %d".formatted(chatId));
+
             var allGames = gameService.getAllGames(chatId);
             var gamesNumber = allGames.size();
             var minTurns = allGames.stream()
@@ -39,6 +42,8 @@ enum GameCommand implements IChatCommand<Message> {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
+            log.info("Start new game for chat %d".formatted(chatId));
+
             var chatGame = gameService.newGame(chatId);
             var reply = SendMessage.builder().chatId(chatId)
                     .text(String.format("Enter a %d digit number", chatGame.getComplexity())).build();
@@ -50,6 +55,7 @@ enum GameCommand implements IChatCommand<Message> {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
+            log.debug("Show turn results for chat %d".formatted(chatId));
 
             if (gameSettings.isReplaceMessage(chatId)) {
                 GameCommand.DELETE_LAST_MESSAGE.execute(message, gameService, gameSettings, telegramClient);
@@ -66,6 +72,7 @@ enum GameCommand implements IChatCommand<Message> {
 
             // show win
             if (gameService.isWin(chatId)) {
+                log.info("Show win results for chat %d".formatted(chatId));
                 GameCommand.SHOW_WIN_RESULT.execute(message, gameService, gameSettings, telegramClient);
                 GameCommand.SHOW_WIN_MESSAGE.execute(message, gameService, gameSettings, telegramClient);
 
@@ -135,6 +142,7 @@ enum GameCommand implements IChatCommand<Message> {
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
             var chatGame = gameService.getChatGame(chatId);
+            log.info("Number of turns %d".formatted(chatGame.getCurrentGame().getTurns().size()));
 
             var reply = SendMessage.builder().chatId(chatId)
                     .text(displayEmojiResult(chatGame)).build();
@@ -164,8 +172,12 @@ enum GameCommand implements IChatCommand<Message> {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
+            log.info("Ask new game warning for chat %d".formatted(chatId));
+
             var reply = SendMessage.builder().chatId(chatId)
-                    .text("Please, start another game using /new command").build();
+                    .text("Please, start another game using /new command")
+                    .replyMarkup(new ReplyKeyboardRemove(true))
+                    .build();
 
             var lastMethod = telegramClient.execute(reply);
             SAVE_LAST_MESSAGE.execute(lastMethod, gameService, gameSettings, telegramClient);
@@ -177,6 +189,8 @@ enum GameCommand implements IChatCommand<Message> {
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
             var messageId = gameService.getChatGame(chatId).getLastMessageId();
+            log.debug("Delete message %d for chat %d".formatted(messageId, chatId));
+
             if (messageId != null) {
                 var reply = DeleteMessage.builder().chatId(chatId)
                         .messageId(messageId)
@@ -190,9 +204,11 @@ enum GameCommand implements IChatCommand<Message> {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
+            var messageId = message.getMessageId();
+            log.debug("Save last message id %d for chat %d".formatted(messageId, chatId));
 
             if (gameService.isInProgress(chatId)) {
-                gameService.setLastMessageId(chatId, message.getMessageId());
+                gameService.setLastMessageId(chatId, messageId);
             }
         }
     };

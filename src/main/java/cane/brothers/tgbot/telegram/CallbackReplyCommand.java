@@ -12,6 +12,7 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageRe
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -22,7 +23,6 @@ import java.util.List;
 
 @Slf4j
 enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
-
     CALLBACK_ANSWER {
         @Override
         public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
@@ -35,6 +35,7 @@ enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
     CALLBACK_COMPLEXITY {
         @Override
         public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            log.debug("Show callback complexity menu");
             CallbackReplyCommand.CALLBACK_ANSWER.execute(callbackQuery, gameService, gameSettings, telegramClient);
             CallbackReplyCommand.CALLBACK_COMPLEXITY_TEXT.execute(callbackQuery, gameService, gameSettings, telegramClient);
             CallbackReplyCommand.CALLBACK_COMPLEXITY_REPLY_MARKUP.execute(callbackQuery, gameService, gameSettings, telegramClient);
@@ -104,6 +105,7 @@ enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
     CALLBACK_SETTINGS {
         @Override
         public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            log.debug("Show callback settings menu");
             CallbackReplyCommand.CALLBACK_ANSWER.execute(callbackQuery, gameService, gameSettings, telegramClient);
             CallbackReplyCommand.CALLBACK_SETTINGS_TEXT.execute(callbackQuery, gameService, gameSettings, telegramClient);
             CallbackReplyCommand.CALLBACK_SETTINGS_REPLY_MARKUP.execute(callbackQuery, gameService, gameSettings, telegramClient);
@@ -121,6 +123,7 @@ enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
     CALLBACK_HIDE_SETTINGS {
         @Override
         public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+            log.debug("Hide settings");
             CallbackReplyCommand.CALLBACK_ANSWER.execute(callbackQuery, gameService, gameSettings, telegramClient);
 
             var reply = DeleteMessage.builder().chatId(callbackQuery.getMessage().getChatId())
@@ -135,6 +138,7 @@ enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
         public void execute(CallbackQuery callbackQuery, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var reply = SendMessage.builder().chatId(callbackQuery.getMessage().getChatId())
                     .text("Settings were updated")
+                    .replyMarkup(new ReplyKeyboardRemove(true))
                     .build();
             telegramClient.execute(reply);
         }

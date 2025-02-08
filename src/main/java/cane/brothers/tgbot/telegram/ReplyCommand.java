@@ -20,6 +20,8 @@ enum ReplyCommand implements IChatCommand<Message>, Utils {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException {
             var chatId = message.getChatId();
+            log.debug("Show game rules for chat %d".formatted(chatId));
+
             var reply = SendMessage.builder().chatId(chatId)
                     .parseMode(ParseMode.MARKDOWNV2)
                     .text(escape(readMarkDownFile("rules.tg.md")))
@@ -32,6 +34,8 @@ enum ReplyCommand implements IChatCommand<Message>, Utils {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException {
             var chatId = message.getChatId();
+            log.debug("Show settings for chat %d".formatted(chatId));
+
             var reply = SendMessage.builder().text("Bulls & Cows settings:").chatId(chatId)
                     .replyMarkup(getSettingsKeyboardMarkup())
                     .build();
