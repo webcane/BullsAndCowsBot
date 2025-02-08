@@ -5,10 +5,6 @@ Telegram bot to play  [Bulls&amp;Cows](https://en.wikipedia.org/wiki/Bulls_and_c
 Required environmental variables:
 ```dotenv
 TGBOT_TOKEN=
-TGBOT_PROXY_HOSTNAME=
-TGBOT_PROXY_PORT=
-TGBOT_PROXY_USERNAME=
-TGBOT_PROXY_PASSWORD=
 DB_NAME=
 DB_HOST=
 SPRING_DATASOURCE_PASSWORD=
@@ -16,12 +12,28 @@ SPRING_DATASOURCE_USERNAME=
 GITHUB_TOKEN=
 ```
 
+## proxy
+To run the tgbot over proxy define additional environmental variables:
+```dotenv
+TGBOT_PROXY_HOSTNAME=
+TGBOT_PROXY_PORT=
+TGBOT_PROXY_USERNAME=
+TGBOT_PROXY_PASSWORD=
+```
+
+## logging
+If necessary, change the logging level using following environmental variables:
+```dotenv
+LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_JDBC=DEBUG
+LOGGING_LEVEL_CANE_BROTHERS_TGBOT=DEBUG
+```
+
 ## telegram commands
 ```
-new - Начать новую игру
-info - Отобразить подсказку по правилам игры
-score - Посмотреть результаты
-settings - Настройки игры
+new - Start new game
+info - Show game rules
+score - Show game score
+settings - Game Settings
 ```
 
 ## deploy to vm
