@@ -56,7 +56,7 @@ do
   if [[ $ref =~ .*/master$ ]];
   then
     echo "Master ref received. Deploying master branch to production..."
-    git --work-tree=/var/www/tgbot-bac --git-dir=/home/cane/git/tgbot-bac.git checkout -f
+    git --work-tree=/var/www/tgbot-bac --git-dir=/home/<VM_USER>/git/tgbot-bac.git checkout -f
   else
     echo "Ref $ref successfully received. Doing nothing: only the master branch may be deployed on this server."
   fi
@@ -66,10 +66,15 @@ activate hook
 ```bash
 chmod +x hooks/post-receive
 ```
+add permissions for www
+```bash
+chown -R <VM_USER>:<VM_USER> /var/www/tgbot-bac
+```
+
 
 ## configure remote repository
 ```bash
-git remote add deploy ssh://<VM_USER>@<VM_IP>/var/git/tgbot-bac.git
+git remote add deploy ssh://<VM_USER>@<VM_IP>/home/<VM_USER>/git/tgbot-bac.git
 ```
 
 ## deploy to vm
