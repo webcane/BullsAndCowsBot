@@ -36,6 +36,42 @@ score - Show game score
 settings - Game Settings
 ```
 
+## prepare vm
+create bare git repository
+```bash
+mkdir ~/git/tgbot-bac.git
+cd ~/git/tgbot-bac.git
+git init --bare
+git config --global init.defaultBranch master
+```
+create hook
+```bash
+touch hooks/post-receive
+```
+set following hook content
+```bash
+#!/bin/bash
+while read oldrev newrev ref
+do
+  if [[ $ref =~ .*/master$ ]];
+  then
+    echo "Master ref received. Deploying master branch to production..."
+    git --work-tree=/var/www/tgbot-bac --git-dir=/home/cane/git/tgbot-bac.git checkout -f
+  else
+    echo "Ref $ref successfully received. Doing nothing: only the master branch may be deployed on this server."
+  fi
+done
+```
+activate hook
+```bash
+chmod +x hooks/post-receive
+```
+
+## configure remote repository
+```bash
+git remote add deploy ssh://<VM_USER>@<VM_IP>/var/git/tgbot-bac.git
+```
+
 ## deploy to vm
 there are following steps:
 1. merge to `master` branch
