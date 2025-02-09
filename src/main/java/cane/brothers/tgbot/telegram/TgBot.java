@@ -15,6 +15,7 @@ import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
@@ -79,9 +80,7 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
 
                 var command = ChatCallbackCommandFactory.create(callbackData);
                 command.execute(callbackQuery, botGame, botSettings, telegramClient);
-            }
-
-            else {
+            } else {
                 log.warn("Unknown update. id %d".formatted(update.getUpdateId()));
             }
 
@@ -103,9 +102,10 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
 
             try {
                 var errorMessage = String.format("%s %s", GameEmoji.WARN, cex.getMessage());
-                replyError(cex.getChatId(), errorMessage);
+                var lastMethod = replyError(cex.getChatId(), errorMessage);
+                GameCommand.SAVE_LAST_MESSAGE.execute(lastMethod, botGame, botSettings, telegramClient);
 
-            } catch (TelegramApiException exx) {
+            } catch (TelegramApiException | ChatGameException exx) {
                 log.error("Can't send fallback message to telegram", exx);
             }
 
@@ -127,10 +127,10 @@ public class TgBot implements SpringLongPollingBot, LongPollingSingleThreadUpdat
         }
     }
 
-    void replyError(Long chatId, String errorMessage) throws TelegramApiException {
+    Message replyError(Long chatId, String errorMessage) throws TelegramApiException {
         var reply = SendMessage.builder().chatId(chatId)
                 .text(errorMessage)
                 .build();
-        telegramClient.execute(reply);
+        return telegramClient.execute(reply);
     }
 }
