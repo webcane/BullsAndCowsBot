@@ -46,7 +46,8 @@ enum GameCommand implements IChatCommand<Message> {
 
             var chatGame = gameService.newGame(chatId);
             var reply = SendMessage.builder().chatId(chatId)
-                    .text(String.format("Enter a %d digit number", chatGame.getComplexity())).build();
+                    .parseMode(ParseMode.MARKDOWNV2)
+                    .text(String.format("Enter a *%d* digit number", chatGame.getComplexity())).build();
             telegramClient.execute(reply);
         }
     },
@@ -145,6 +146,7 @@ enum GameCommand implements IChatCommand<Message> {
             log.info("Number of turns %d".formatted(chatGame.getCurrentGame().getTurns().size()));
 
             var reply = SendMessage.builder().chatId(chatId)
+                    .parseMode(ParseMode.MARKDOWNV2)
                     .text(displayEmojiResult(chatGame)).build();
             telegramClient.execute(reply);
         }
@@ -152,10 +154,11 @@ enum GameCommand implements IChatCommand<Message> {
         public String displayEmojiResult(@NotNull IChatGame chatGame) {
             var guessGame = chatGame.getCurrentGame();
             if (guessGame.isWin()) {
-                StringBuilder sb = new StringBuilder("You are win! Secret guess is ");
+                StringBuilder sb = new StringBuilder("You are win! Secret guess is *");
                 appendGuess(guessGame.getTurns().getLast(), sb);
-                sb.append(". Number of turns is ");
+                sb.append("*. Number of turns is *");
                 sb.append(guessGame.getTurns().size());
+                sb.append("*");
                 return sb.toString();
             }
             return "";

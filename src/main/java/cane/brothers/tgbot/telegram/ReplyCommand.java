@@ -36,20 +36,22 @@ enum ReplyCommand implements IChatCommand<Message>, Utils {
             var chatId = message.getChatId();
             log.debug("Show settings for chat %d".formatted(chatId));
 
-            var reply = SendMessage.builder().text("Bulls & Cows settings:").chatId(chatId)
+            var reply = SendMessage.builder().chatId(chatId)
+                    .parseMode(ParseMode.MARKDOWNV2)
+                    .text("*Bulls & Cows* settings:")
                     .replyMarkup(getSettingsKeyboardMarkup())
                     .build();
             telegramClient.execute(reply);
         }
 
         InlineKeyboardMarkup getSettingsKeyboardMarkup() {
-            var complexityButton = InlineKeyboardButton.builder().text("Change complexity")
+            var complexityButton = InlineKeyboardButton.builder().text("Complexity")
                     .callbackData(ChatCallbackCommandFactory.MENU_COMPLEXITY.toString()).build();
 
-            var resultsButton = InlineKeyboardButton.builder().text("Show all results")
+            var resultsButton = InlineKeyboardButton.builder().text("Results")
                     .callbackData(ChatCallbackCommandFactory.MENU_REPLACE_MESSAGE.toString()).build();
 
-            var turnsButton = InlineKeyboardButton.builder().text("Show all turns")
+            var turnsButton = InlineKeyboardButton.builder().text("Turns")
                     .callbackData(ChatCallbackCommandFactory.MENU_SHOW_TURNS.toString()).build();
 
             var hideButton = InlineKeyboardButton.builder().text("Hide settings")
