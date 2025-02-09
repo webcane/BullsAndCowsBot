@@ -141,7 +141,9 @@ enum CallbackReplyCommand implements IChatCommand<CallbackQuery> {
                     .text("Settings were updated")
                     .replyMarkup(new ReplyKeyboardRemove(true))
                     .build();
-            telegramClient.execute(reply);
+
+            var lastMethod = telegramClient.execute(reply);
+            GameCommand.SAVE_LAST_MESSAGE.execute(lastMethod, gameService, gameSettings, telegramClient);
         }
     };
 

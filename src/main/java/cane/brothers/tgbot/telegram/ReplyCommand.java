@@ -1,5 +1,6 @@
 package cane.brothers.tgbot.telegram;
 
+import cane.brothers.tgbot.game.ChatGameException;
 import cane.brothers.tgbot.game.ChatGameService;
 import cane.brothers.tgbot.game.ChatGameSettingsService;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ import java.util.List;
 enum ReplyCommand implements IChatCommand<Message>, Utils {
     INFO {
         @Override
-        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException {
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
             log.debug("Show game rules for chat %d".formatted(chatId));
 
@@ -26,13 +27,15 @@ enum ReplyCommand implements IChatCommand<Message>, Utils {
                     .parseMode(ParseMode.MARKDOWNV2)
                     .text(escape(readMarkDownFile("rules.tg.md")))
                     .build();
-            telegramClient.execute(reply);
+
+            var lastMethod = telegramClient.execute(reply);
+            GameCommand.SAVE_LAST_MESSAGE.execute(lastMethod, gameService, gameSettings, telegramClient);
         }
     },
     SETTINGS {
         // replace_message замещать последнее сообщение
         @Override
-        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException {
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
             log.debug("Show settings for chat %d".formatted(chatId));
 
@@ -41,7 +44,9 @@ enum ReplyCommand implements IChatCommand<Message>, Utils {
                     .text("*Bulls & Cows* settings:")
                     .replyMarkup(getSettingsKeyboardMarkup())
                     .build();
-            telegramClient.execute(reply);
+
+            var lastMethod = telegramClient.execute(reply);
+            GameCommand.SAVE_LAST_MESSAGE.execute(lastMethod, gameService, gameSettings, telegramClient);
         }
 
         InlineKeyboardMarkup getSettingsKeyboardMarkup() {

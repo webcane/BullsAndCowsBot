@@ -12,7 +12,7 @@ import java.util.Arrays;
 @Getter
 @RequiredArgsConstructor
 enum ChatCommandFactory implements ICommandFactory<Message> {
-    NEW(GameCommand.NEW),
+    START(GameCommand.START),
     INFO(ReplyCommand.INFO),
     SCORE(GameCommand.SCORE),
     SETTINGS(ReplyCommand.SETTINGS),

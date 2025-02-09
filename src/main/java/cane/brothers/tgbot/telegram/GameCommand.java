@@ -35,10 +35,12 @@ enum GameCommand implements IChatCommand<Message> {
                     .parseMode(ParseMode.MARKDOWNV2)
                     .text(String.format("*Game Score*\n\nNumber of wins: *%d*\nNumber of games played: *%d*\nMinimum number of turns: *%d*",
                             gamesWin, gamesNumber, minTurns)).build();
-            telegramClient.execute(reply);
+
+            var lastMethod = telegramClient.execute(reply);
+            SAVE_LAST_MESSAGE.execute(lastMethod, gameService, gameSettings, telegramClient);
         }
     },
-    NEW {
+    START {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
             var chatId = message.getChatId();
@@ -48,7 +50,9 @@ enum GameCommand implements IChatCommand<Message> {
             var reply = SendMessage.builder().chatId(chatId)
                     .parseMode(ParseMode.MARKDOWNV2)
                     .text(String.format("Enter a *%d* digit number", chatGame.getComplexity())).build();
-            telegramClient.execute(reply);
+
+            var lastMethod = telegramClient.execute(reply);
+            SAVE_LAST_MESSAGE.execute(lastMethod, gameService, gameSettings, telegramClient);
         }
     },
 
@@ -189,16 +193,20 @@ enum GameCommand implements IChatCommand<Message> {
 
     DELETE_LAST_MESSAGE {
         @Override
-        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws TelegramApiException, ChatGameException {
+        public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws ChatGameException {
             var chatId = message.getChatId();
             var messageId = gameService.getChatGame(chatId).getLastMessageId();
             log.debug("Delete message %d for chat %d".formatted(messageId, chatId));
 
             if (messageId != null) {
-                var reply = DeleteMessage.builder().chatId(chatId)
-                        .messageId(messageId)
-                        .build();
-                telegramClient.execute(reply);
+                try {
+                    var reply = DeleteMessage.builder().chatId(chatId)
+                            .messageId(messageId)
+                            .build();
+                    telegramClient.execute(reply);
+                } catch (TelegramApiException tex) {
+                   log.warn(tex.getMessage());
+                }
             }
         }
     },

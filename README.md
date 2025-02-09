@@ -31,7 +31,7 @@ LOGGING_LEVEL_CANE_BROTHERS_TGBOT=DEBUG
 
 ## telegram commands
 ```
-new - Start new game
+start - Start new game
 info - Show game rules
 score - Show game score
 settings - Game Settings
