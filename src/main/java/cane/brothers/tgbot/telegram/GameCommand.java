@@ -16,7 +16,7 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import java.util.Comparator;
 
 @Slf4j
-enum GameCommand implements IChatCommand<Message> {
+enum GameCommand implements IChatCommand<Message>, Utils {
     SCORE {
         @Override
         public void execute(Message message, ChatGameService gameService, ChatGameSettingsService gameSettings, TelegramClient telegramClient) throws ChatGameException, TelegramApiException {
@@ -151,7 +151,7 @@ enum GameCommand implements IChatCommand<Message> {
 
             var reply = SendMessage.builder().chatId(chatId)
                     .parseMode(ParseMode.MARKDOWNV2)
-                    .text(displayEmojiResult(chatGame)).build();
+                    .text(escape(displayEmojiResult(chatGame))).build();
             telegramClient.execute(reply);
         }
 
@@ -182,7 +182,7 @@ enum GameCommand implements IChatCommand<Message> {
             log.info("Ask new game warning for chat %d".formatted(chatId));
 
             var reply = SendMessage.builder().chatId(chatId)
-                    .text("Please, start another game using /new command")
+                    .text("Please, start another game using /start command")
                     .replyMarkup(new ReplyKeyboardRemove(true))
                     .build();
 

@@ -18,7 +18,7 @@ enum CallbackGameCommand implements IChatCommand<CallbackQuery> {
             log.debug("Ask user to start new game");
             var chatId = callbackQuery.getMessage().getChatId();
             var reply = SendMessage.builder().chatId(chatId)
-                    .text("Please, start another game using /new command")
+                    .text("Please, start another game using /start command")
                     .replyMarkup(new ReplyKeyboardRemove(true))
                     .build();
 
