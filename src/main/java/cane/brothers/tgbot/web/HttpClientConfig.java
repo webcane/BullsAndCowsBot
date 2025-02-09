@@ -1,91 +1,96 @@
 package cane.brothers.tgbot.web;
 
 import cane.brothers.tgbot.AppProperties;
-import okhttp3.ConnectionPool;
-import okhttp3.Credentials;
-import okhttp3.Dispatcher;
-import okhttp3.OkHttpClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.web.client.RestClientBuilderConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.client.OkHttp3ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
-import java.net.InetSocketAddress;
-import java.net.Proxy;
+import java.io.IOException;
+import java.net.*;
+import java.net.http.HttpClient;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+@Slf4j
 @Configuration
 public class HttpClientConfig {
 
     @Bean
-    Supplier<Proxy> proxySupplier(AppProperties properties) {
+    Supplier<ProxySelector> proxySupplier(AppProperties properties) {
         return properties.proxy() == null ?
                 () -> null :
-                () -> new Proxy(Proxy.Type.HTTP, new InetSocketAddress(properties.proxy().hostname(),
-                                properties.proxy().port() == null ? 0 : properties.proxy().port()));
-    }
+                () -> new ProxySelector() {
+                    @Override
+                    public List<Proxy> select(URI uri) {
+                        try {
+                            URL url = uri.toURL();
+                            if (url.getProtocol().startsWith("http")) {
+                                return List.of( new Proxy(Proxy.Type.HTTP, new InetSocketAddress(properties.proxy().hostname(),
+                                        properties.proxy().port() == null ? 0 : properties.proxy().port())));
+                            } else if (url.getProtocol().startsWith("sock")) {
+                                return List.of( new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(properties.proxy().hostname(),
+                                        properties.proxy().port() == null ? 0 : properties.proxy().port())));
+                            }
+                        } catch (MalformedURLException e) {
+                            log.error("", e);
+                        }
+                        return Collections.emptyList();
+                    }
 
-    @Bean
-    Supplier<okhttp3.Authenticator> authenticatorSupplier(AppProperties properties) {
-        return properties.proxy() == null ?
-                () -> null :
-                () -> (route, response) -> {
-                    String credential = Credentials.basic(properties.proxy().username(), properties.proxy().password());
-                    return response
-                            .request()
-                            .newBuilder()
-                            .header(HttpHeaders.PROXY_AUTHORIZATION, credential)
-                            .build();
+                    @Override
+                    public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
+                        log.error("Could not established connection a proxy/socks server.");
+                    }
                 };
     }
 
     @Bean
-    public ConnectionPool connectionPool() {
-        return new ConnectionPool(100, 75, TimeUnit.SECONDS);
+    Supplier<Authenticator> authenticatorSupplier(AppProperties properties) {
+        return properties.proxy() == null ?
+                () -> null :
+                () -> new java.net.Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new java.net.PasswordAuthentication(properties.proxy().username(), properties.proxy().password().toCharArray());
+                    }
+                };
     }
 
     @Bean
-    public OkHttpClient.Builder okHttpClientBuilder(Supplier<Proxy> proxySupplier,
-                                                    Supplier<okhttp3.Authenticator> authenticatorSupplier,
-                                                    ConnectionPool connectionPool) {
-        Dispatcher dispatcher = new Dispatcher();
-        dispatcher.setMaxRequests(100);
-        dispatcher.setMaxRequestsPerHost(100);
+    public HttpClient.Builder httpClientBuilder(Supplier<ProxySelector> proxySupplier,
+                                                  Supplier<Authenticator> authenticatorSupplier) {
 
-        OkHttpClient.Builder okHttpClientBuilder = new OkHttpClient()
-                .newBuilder()
-                .dispatcher(dispatcher)
-                .connectionPool(connectionPool)
-                .readTimeout(100, TimeUnit.SECONDS)
-                .writeTimeout(70, TimeUnit.SECONDS)
-                .connectTimeout(75, TimeUnit.SECONDS);
+        HttpClient.Builder httpClientBuilder = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(30));
 
         // Proxy
-        Optional.ofNullable(proxySupplier.get()).ifPresent(okHttpClientBuilder::proxy);
-        Optional.ofNullable(authenticatorSupplier.get()).ifPresent(okHttpClientBuilder::proxyAuthenticator);
+        Optional.ofNullable(proxySupplier.get()).ifPresent(httpClientBuilder::proxy);
+        Optional.ofNullable(authenticatorSupplier.get()).ifPresent(httpClientBuilder::authenticator);
 
-        return okHttpClientBuilder;
+        return httpClientBuilder;
     }
 
     @Bean
-    public OkHttpClient okHttpClient(OkHttpClient.Builder okHttpClientBuilder) {
-        return okHttpClientBuilder.build();
+    public HttpClient httpClient(HttpClient.Builder httpClientBuilder) {
+        return httpClientBuilder.build();
     }
 
     @Bean
-    OkHttp3ClientHttpRequestFactory okHttp3ClientHttpRequestFactory(OkHttpClient okHttpClient) {
-        return new OkHttp3ClientHttpRequestFactory(okHttpClient);
+    JdkClientHttpRequestFactory clientHttpRequestFactory(HttpClient httpClient) {
+        return new JdkClientHttpRequestFactory(httpClient);
     }
 
     @Bean
     RestClient.Builder restClientBuilder(RestClientBuilderConfigurer restClientBuilderConfigurer,
-                                         OkHttp3ClientHttpRequestFactory okHttp3ClientHttpRequestFactory) {
-        RestClient.Builder builder = RestClient.builder()
-                .requestFactory(okHttp3ClientHttpRequestFactory);
+                                         ClientHttpRequestFactory clientHttpRequestFactory) {
+        RestClient.Builder builder = RestClient.builder().requestFactory(clientHttpRequestFactory);
         return restClientBuilderConfigurer.configure(builder);
     }
 }
